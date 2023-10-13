@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/159.a5c58f5b.chunk.js","mappings":"+KAQA,UANc,WACZ,OACEA,EAAAA,EAAAA,KAAA,OAAAC,SAAK,qBAET,C","sources":["views/customizeWebiste/Index.js"],"sourcesContent":["import React from 'react'\n\nconst Index = () => {\n  return (\n    <div>Customize Website</div>\n  )\n}\n\nexport default Index"],"names":["_jsx","children"],"sourceRoot":""}

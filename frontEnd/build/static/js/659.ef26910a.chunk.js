@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_spellgrowth_adi_nath_group=self.webpackChunk_spellgrowth_adi_nath_group||[]).push([[659],{92659:function(t,r,a){a.r(r);a(72791);var e=a(80184);r.default=function(){return(0,e.jsx)("div",{children:"Master distributot Dashboard"})}}}]);
+//# sourceMappingURL=659.ef26910a.chunk.js.map

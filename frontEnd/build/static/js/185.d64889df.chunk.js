@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_spellgrowth_adi_nath_group=self.webpackChunk_spellgrowth_adi_nath_group||[]).push([[185],{32185:function(r,a,e){e.r(a);e(72791);var n=e(80184);a.default=function(){return(0,n.jsx)("div",{children:"Master Admin Dashboard"})}}}]);
+//# sourceMappingURL=185.d64889df.chunk.js.map

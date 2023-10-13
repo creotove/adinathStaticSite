@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/418.7e89020c.chunk.js","mappings":"+KAQA,UANc,WACZ,OACEA,EAAAA,EAAAA,KAAA,OAAAC,SAAK,sBAET,C","sources":["views/retailer-dashboard/Index.js"],"sourcesContent":["import React from 'react'\n\nconst Index = () => {\n  return (\n    <div>Retailer Dashboard</div>\n  )\n}\n\nexport default Index"],"names":["_jsx","children"],"sourceRoot":""}
