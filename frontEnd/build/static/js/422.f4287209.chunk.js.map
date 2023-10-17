@@ -1,1 +1,0 @@
-{"version":3,"file":"static/js/422.f4287209.chunk.js","mappings":"+KAQA,UANc,WACZ,OACEA,EAAAA,EAAAA,KAAA,OAAAC,SAAK,mBAET,C","sources":["views/purchaseCoupon/Index.js"],"sourcesContent":["import React from 'react'\n\nconst Index = () => {\n  return (\n    <div>Purchase Coupon</div>\n  )\n}\n\nexport default Index"],"names":["_jsx","children"],"sourceRoot":""}

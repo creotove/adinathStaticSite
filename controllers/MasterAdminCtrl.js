@@ -168,71 +168,6 @@ const rejectCouponPurchase = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-// const getUserForApproval = async (req, res) => {
-//   try {
-//     const pendingUser = await newUserModel
-//       .find({ status: "pending" })
-//       .select({ name: 1, _id: 0, uniqueId: 1, role: 1 });
-//     if (!pendingUser) {
-//       return res.status(404).send({
-//         success: false,
-//         message: "Error in fetching users",
-//       });
-//     }
-//     if (pendingUser.length === 0) {
-//       return res.status(200).send({
-//         success: false,
-//         message: "No users found",
-//       });
-//     }
-//     if (pendingUser) {
-//       const users = await ApprovalModel.find();
-//       if (!users) {
-//         return res.status(404).send({
-//           success: false,
-//           message: "Error in fetching users",
-//         });
-//       }
-//       if (users.length === 0) {
-//         return res.status(200).send({
-//           success: false,
-//           message: "No users found",
-//         });
-//       }
-//       return res.status(200).send({
-//         data: users,
-//         success: true,
-//         message: "All User Fetched",
-//       });
-//     }
-
-//     // const users = await ApprovalModel.find();
-//     // if(!users){
-//     //     return res.status(404).send({
-//     //         success : false,
-//     //         message : 'Error in fetching users'
-//     //     })
-//     // }
-//     // if(users.length === 0){
-//     //     return res.status(200).send({
-//     //         success : false,
-//     //         message : 'No users found'
-//     //     })
-//     // }
-//     // return res.status(200).send({
-//     //     data : users,
-//     //     success: true,
-//     //     message : 'All User Fetched'
-//     // })
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).send({
-//       success: false,
-//       message: "Internal Server Error",
-//     });
-//   }
-// };
-
 const getUserForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
@@ -269,6 +204,164 @@ const getUserForApproval = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+const getRetailerForApproval = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingRetailer = await newUserModel.find({
+      role: "Retailer",
+      status: "pending",
+    });
+
+    // Create an array to store the results
+    const usersWithTransactionInfo = [];
+
+    // Loop through each pending user
+    for (const user of pendingRetailer) {
+      // Find the corresponding ApprovalModel entry for the user
+      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
+      console.log(approvalInfo);
+
+      // If an approvalInfo entry exists, add it to the result
+      if (approvalInfo) {
+        usersWithTransactionInfo.push({
+          name: user.name,
+          uniqueId: user.uniqueId,
+          role: user.role,
+          transactionId: approvalInfo.transactionId,
+          paid: approvalInfo.paid,
+        });
+      }
+    }
+    return res.status(200).send({
+      data: usersWithTransactionInfo,
+      success: true,
+      message: "All User Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+//Works fine
+const getMasterDistributorForApproval = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingMasterDistributor = await newUserModel.find({
+      role: "Master Distributor",
+      status: "pending",
+    });
+
+    // Create an array to store the results
+    const usersWithTransactionInfo = [];
+
+    // Loop through each pending user
+    for (const user of pendingMasterDistributor) {
+      // Find the corresponding ApprovalModel entry for the user
+      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
+      console.log(approvalInfo);
+
+      // If an approvalInfo entry exists, add it to the result
+      if (approvalInfo) {
+        usersWithTransactionInfo.push({
+          name: user.name,
+          uniqueId: user.uniqueId,
+          role: user.role,
+          transactionId: approvalInfo.transactionId,
+          paid: approvalInfo.paid,
+        });
+      }
+    }
+    return res.status(200).send({
+      data: usersWithTransactionInfo,
+      success: true,
+      message: "All User Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getDistributorForApproval = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingDistributor = await newUserModel.find(
+      { status: "pending" , role: "Distributor" }
+    );
+
+    // Create an array to store the results
+    const usersWithTransactionInfo = [];
+
+    // Loop through each pending user
+    for (const user of pendingDistributor) {
+      // Find the corresponding ApprovalModel entry for the user
+      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
+      console.log(approvalInfo);
+
+      // If an approvalInfo entry exists, add it to the result
+      if (approvalInfo) {
+        usersWithTransactionInfo.push({
+          name: user.name,
+          uniqueId: user.uniqueId,
+          role: user.role,
+          transactionId: approvalInfo.transactionId,
+          paid: approvalInfo.paid,
+        });
+      }
+    }
+    return res.status(200).send({
+      data: usersWithTransactionInfo,
+      success: true,
+      message: "All User Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getAdminForApproval = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingAdmin = await newUserModel.find({
+      role: "Admin",
+      status: "pending",
+    });
+
+    // Create an array to store the results
+    const usersWithTransactionInfo = [];
+
+    // Loop through each pending user
+    for (const user of pendingAdmin) {
+      // Find the corresponding ApprovalModel entry for the user
+      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
+      console.log(approvalInfo);
+
+      // If an approvalInfo entry exists, add it to the result
+      if (approvalInfo) {
+        usersWithTransactionInfo.push({
+          name: user.name,
+          uniqueId: user.uniqueId,
+          role: user.role,
+          transactionId: approvalInfo.transactionId,
+          paid: approvalInfo.paid,
+        });
+      }
+    }
+    return res.status(200).send({
+      data: usersWithTransactionInfo,
+      success: true,
+      message: "All User Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 module.exports = {
   approveUser,
@@ -276,4 +369,8 @@ module.exports = {
   purchaseCouponNew,
   rejectCouponPurchase,
   getUserForApproval,
+  getRetailerForApproval,
+  getMasterDistributorForApproval,
+  getDistributorForApproval,
+  getAdminForApproval
 };

@@ -195,14 +195,13 @@ const requestForApproval = async (req, res) => {
         success: false,
       });
     }
-    user.paidRolePrice = true;
-    await user.save();
     if (user.status === "approved") {
       return res.status(400).send({
         error: "User already approved",
         success: false,
       });
     }
+    user.paidRolePrice = true;
     if (user.status === "pending") {
       const request = await ApprovalModel.create({
         userId,
