@@ -1,6 +1,8 @@
 const ApprovalModel = require("../models/ApprovalModel");
+const addToWalletHistory = require("../models/addToWalletHistory");
 const CouponPurchased = require("../models/couponPurchased");
 const newUserModel = require("../models/newUserModel");
+const withdrawalHistory = require("../models/withdrawalHistory");
 
 const approveUser = async (req, res) => {
   try {
@@ -59,92 +61,7 @@ const rejectUser = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-const calculateCommission = async (userId, couponPrice, quantity) => {
-  try {
-    const user = await newUserModel.findById(userId);
 
-    if (!user) {
-      return 0;
-    }
-
-    // Calculate commission for the current user
-    const commission = (user.couponPrice - user.actualPriceOfCoupon) * quantity;
-
-    // Update the user's commission fields
-    user.totalCommissionEarned += commission;
-    user.currentCommission = user.commissionOfCreatedByUser;
-
-    // Save the user's changes
-    await user.save();
-
-    // Check if createdBy user and commissionOfcreatedPartners are defined
-    // if (user.createdBy && user.createdBy.commissionOfcreatedPartners) {
-    //     user.createdBy.commissionOfcreatedPartners.push({ commission, user: userId });
-    //     await user.createdBy.save();
-    // }
-
-    // Update the commissionEarned array with the commission record
-    user.commissionEarned.push({ commission, user: userId });
-    await user.save();
-
-    // Recursively calculate commission for the user's creator
-    if (user.createdBy) {
-      await calculateCommission(user.createdBy, couponPrice, quantity);
-    }
-
-    return commission;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-};
-const purchaseCouponNew = async (req, res) => {
-  try {
-    const { userId, singleCouponPrice, quantity, totalCouponPrice } = req.body;
-
-    // Find the user who is purchasing the coupon
-    const user = await newUserModel.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const couponPurchase = await CouponPurchased.findOne({
-      retailerId: userId,
-    });
-
-    if (!couponPurchase) {
-      return res
-        .status(404)
-        .json({ error: "Coupon purchase request not found" });
-    }
-
-    // Verify the transaction with the provided transactionId (you can implement your verification logic here)
-
-    // If the transaction is verified, update the coupon purchase status to 'approved'
-    couponPurchase.status = "approved";
-    await couponPurchase.save();
-
-    // Calculate total commission based on the single coupon price and quantity
-    const totalCommission =
-      (singleCouponPrice - user.actualPriceOfCoupon) * quantity;
-
-    // Update the user's couponPrice, currentCommission, totalCommissionEarned, and commissionOfCreatedByUser
-    user.couponPrice = singleCouponPrice;
-    user.commissionOfCreatedByUser += totalCommission;
-    user.totalCommissionEarned += totalCommission;
-    user.currentCommission = user.commissionOfCreatedByUser;
-    await user.save();
-
-    // Calculate and update commission hierarchy recursively
-    await calculateCommission(userId, singleCouponPrice, quantity);
-
-    res.status(200).json({ message: "Coupon purchased successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
 const rejectCouponPurchase = async (req, res) => {
   try {
     const { purchaseId } = req.body;
@@ -287,9 +204,10 @@ const getMasterDistributorForApproval = async (req, res) => {
 const getDistributorForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
-    const pendingDistributor = await newUserModel.find(
-      { status: "pending" , role: "Distributor" }
-    );
+    const pendingDistributor = await newUserModel.find({
+      status: "pending",
+      role: "Distributor",
+    });
 
     // Create an array to store the results
     const usersWithTransactionInfo = [];
@@ -361,16 +279,430 @@ const getAdminForApproval = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+const getCouponRequests = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingCouponRequests = await CouponPurchased.find({
+      status: "pending",
+    }).populate("retailerId");
+    if (!pendingCouponRequests) {
+      return res.status(404).send({
+        success: false,
+        message: "No Coupon Requests Found",
+      });
+    }
+
+    if (pendingCouponRequests.length === 0) {
+      return res.status(200).send({
+        success: false,
+        message: "No Coupon Requests Found",
+      });
+    }
+
+    return res.status(200).send({
+      data: pendingCouponRequests,
+      success: true,
+      message: "All Coupon Requests Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getAddMoneyToWalletRequests = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingAddMoneyToWalletRequests = await addToWalletHistory
+      .find({
+        status: "pending",
+      })
+      .populate("userId");
+    if (!pendingAddMoneyToWalletRequests) {
+      return res.status(404).send({
+        success: false,
+        message: "No Add Money To Wallet Requests Found",
+      });
+    }
+
+    if (pendingAddMoneyToWalletRequests.length === 0) {
+      return res.status(200).send({
+        success: false,
+        message: "No Add Money To Wallet Requests Found",
+      });
+    }
+
+    return res.status(200).send({
+      data: pendingAddMoneyToWalletRequests,
+      success: true,
+      message: "All Add Money To Wallet Requests Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const approveAddMoneyToWalletRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const addMoneyToWalletRequest = await addToWalletHistory.findById(id);
+    if (!addMoneyToWalletRequest) {
+      return res.status(404).send({
+        success: false,
+        message: "Add Money To Wallet Request Not Found",
+      });
+    }
+
+    if (addMoneyToWalletRequest.status !== "pending") {
+      return res.status(400).send({
+        success: false,
+        message: "Add Money To Wallet Request is not pending",
+      });
+    }
+    const userId = addMoneyToWalletRequest.userId;
+
+    const user = await newUserModel.findById(userId);
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User Not Found",
+      });
+    }
+    user.walletBalance = user.walletBalance + addMoneyToWalletRequest.amount; 
+    await user.save();
+    addMoneyToWalletRequest.status = "approved";
+    await addMoneyToWalletRequest.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Add Money To Wallet Request Approved",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const rejectAddMoneyToWalletRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const addMoneyToWalletRequest = await addToWalletHistory.findById(id);
+    if (!addMoneyToWalletRequest) {
+      return res.status(404).send({
+        success: false,
+        message: "Add Money To Wallet Request Not Found",
+      });
+    }
+
+    if (addMoneyToWalletRequest.status !== "pending") {
+      return res.status(400).send({
+        success: false,
+        message: "Add Money To Wallet Request is not pending",
+      });
+    }
+
+    addMoneyToWalletRequest.status = "rejected";
+    addMoneyToWalletRequest.error = "Transaction Id Not Found";
+    await addMoneyToWalletRequest.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Add Money To Wallet Request Rejected",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+const getWalletWithdrawalRequest = async (req, res) => {
+  try {
+    // Find all users with status 'pending' from the newUserModel
+    const pendingWalletWithdrawalRequest = await withdrawalHistory
+      .find({
+        status: "pending",
+      })
+      .populate("userId");
+    if (!pendingWalletWithdrawalRequest) {
+      return res.status(404).send({
+        success: false,
+        message: "No Wallet Withdrawal Requests Found",
+      });
+    }
+
+    if (pendingWalletWithdrawalRequest.length === 0) {
+      return res.status(200).send({
+        success: false,
+        message: "No Wallet Withdrawal Requests Found",
+      });
+    }
+
+    return res.status(200).send({
+      data: pendingWalletWithdrawalRequest,
+      success: true,
+      message: "All Wallet Withdrawal Requests Fetched",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const approveWalletWithdrawalRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { transactionId } = req.body;
+    const walletWithdrawalRequest = await withdrawalHistory.findById(id);
+    if (!walletWithdrawalRequest) {
+      return res.status(404).send({
+        success: false,
+        message: "Wallet Withdrawal Request Not Found",
+      });
+    }
+
+    if (walletWithdrawalRequest.status !== "pending") {
+      return res.status(400).send({
+        success: false,
+        message: "Wallet Withdrawal Request is not pending",
+      });
+    }
+
+    walletWithdrawalRequest.status = "approved";
+    walletWithdrawalRequest.transactionId = transactionId;
+    await walletWithdrawalRequest.save();
+
+    const uniqueId = walletWithdrawalRequest.uniqueId;
+    const user = await newUserModel.findOne({ uniqueId });
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User Not Found",
+      });
+    }
+    user.totalCommissionEarned = user.totalCommissionEarned - walletWithdrawalRequest.amount;
+    await user.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Wallet Withdrawal Request Approved",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const rejectWalletWithdrawalRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const walletWithdrawalRequest = await withdrawalHistory.findById(id);
+    if (!walletWithdrawalRequest) {
+      return res.status(404).send({
+        success: false,
+        message: "Wallet Withdrawal Request Not Found",
+      });
+    }
+
+    if (walletWithdrawalRequest.status !== "pending") {
+      return res.status(400).send({
+        success: false,
+        message: "Wallet Withdrawal Request is not pending",
+      });
+    }
+
+    walletWithdrawalRequest.status = "rejected";
+    walletWithdrawalRequest.error = "Transaction Id Not Found";
+    await walletWithdrawalRequest.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Wallet Withdrawal Request Rejected",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+const calculateAndAssignCommissions = async (req, res) => {
+  try {
+    // Get the purchaseId from the request body
+    const { purchaseId } = req.body;
+
+    // Find the Coupon Purchase Record
+    const couponPurchase = await CouponPurchased.findById(purchaseId);
+
+    if (!couponPurchase) {
+      return res.status(404).json({ message: "Coupon purchase not found." });
+    }
+
+    // Initialize an array to store user commissions
+    const userCommissions = [];
+
+    // Start with the retailer and follow the chain of createdBy users
+    let currentUser = couponPurchase.retailerId;
+
+    while (currentUser) {
+      const user = await newUserModel.findOne({ uniqueId: currentUser });
+
+      if (!user) {
+        break; // User not found, exit the loop
+      }
+
+      // Calculate the commission based on coupon price and actual price
+      const commission = user.couponPrice - user.actualPriceOfCoupon;
+
+      // Update the user's commissionEarned and totalCommissionEarned
+      user.commissionEarned.push({
+        commission,
+        user: couponPurchase.retailerId,
+      });
+      user.totalCommissionEarned += commission;
+
+      // Save the updated user
+      await user.save();
+
+      // Add the user's commission to the array
+      userCommissions.push({
+        userId: user._id,
+        commission,
+      });
+
+      // Move to the next user in the chain
+      currentUser = user.createdBy;
+    }
+
+    // Respond with the user commissions
+    return res.status(200).json({ userCommissions });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+const getAllMasterAdmins = async (req, res) => {
+  const masterAdmins = await newUserModel.find({ role: "Master Admin" });
+  if (!masterAdmins) {
+    return res.status(404).send({
+      success: false,
+      message: "Master Admins not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Master Admins fetched successfully",
+    data: masterAdmins,
+  });
+};
+const getAllAdmins = async (req, res) => {
+  const admins = await newUserModel.find({ role: "Admin" });
+  if (!admins) {
+    return res.status(404).send({
+      success: false,
+      message: "Master Admins not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Master Admins fetched successfully",
+    data: admins,
+  });
+};
+const getAllMasterDistributor = async (req, res) => {
+  const masterDistribution = await newUserModel.find({
+    role: "Master Distributor",
+  });
+  if (!masterDistribution) {
+    return res.status(404).send({
+      success: false,
+      message: "Master Distribution not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Master Distribution fetched successfully",
+    data: masterDistribution,
+  });
+};
+const getAllDistributor = async (req, res) => {
+  const distributor = await newUserModel.find({ role: "Distributor" });
+  if (!distributor) {
+    return res.status(404).send({
+      success: false,
+      message: "Distribution not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Distribution fetched successfully",
+    data: distributor,
+  });
+};
+const getAllRetailer = async (req, res) => {
+  const retailer = await newUserModel.find({ role: "Retailer" });
+  if (!retailer) {
+    return res.status(404).send({
+      success: false,
+      message: "Retailer not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Retailer fetched successfully",
+    data: retailer,
+  });
+};
+const getAlLusers = async (req, res) => {
+  const users = await newUserModel.find({});
+  if (!users) {
+    return res.status(404).send({
+      success: false,
+      message: "Users not found",
+    });
+  }
+  return res.status(200).send({
+    success: true,
+    message: "Users fetched successfully",
+    data: users,
+  });
+};
 
 module.exports = {
   approveUser,
   rejectUser,
-  purchaseCouponNew,
+  calculateAndAssignCommissions,
   rejectCouponPurchase,
   getUserForApproval,
   getRetailerForApproval,
   getMasterDistributorForApproval,
   getDistributorForApproval,
-  getAdminForApproval
+  getAdminForApproval,
+  getCouponRequests,
+  getAddMoneyToWalletRequests,
+  approveAddMoneyToWalletRequest,
+  rejectAddMoneyToWalletRequest,
+  getWalletWithdrawalRequest,
+  approveWalletWithdrawalRequest,
+  rejectWalletWithdrawalRequest,
+  getAllMasterAdmins,
+  getAllAdmins,
+  getAllMasterDistributor,
+  getAllDistributor,
+  getAllRetailer,
+  getAlLusers,
 };

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const AccountDetailsSchema = new mongoose.Schema({
-    userId: { type: "String", ref: 'User' },
+    userId: { type: "String", ref: 'newUser' },
     accountNumber: Number,
     ifscCode: String,
     bankName: String,

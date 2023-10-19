@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 const withdrawalHistorySchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'newUser' },
     amount: Number,
+    uniqueId:{
+        type: String,
+        required: true,
+    },
     date: { type: Date, default: Date.now },
     bankName: {
         type: String,

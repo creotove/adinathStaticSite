@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunk_spellgrowth_adi_nath_group=self.webpackChunk_spellgrowth_adi_nath_group||[]).push([[418],{49418:function(e,r,a){a.r(r);a(72791);var t=a(80184);r.default=function(){return(0,t.jsx)("div",{children:"Retailer Dashboard"})}}}]);
-//# sourceMappingURL=418.7e89020c.chunk.js.map

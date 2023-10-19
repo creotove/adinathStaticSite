@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const ApprovalSchema = new mongoose.Schema({
-  userId: { type: "String", ref: "User" },
+  userId: { type: "String", ref: "newUser" },
   role: {
     type: String,
     enum: ["Admin", "Master Distributor", "Distributor", "Retailer"],

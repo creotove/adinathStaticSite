@@ -31,6 +31,7 @@ app.use("/api/v1/user", require("./routes/userRoutes"));
 app.use("/api/v1/masterAdmin", require("./routes/masterAdminRoutes"));
 app.use("/api/v1/admin", require("./routes/adminRoutes"));
 app.use("/api/v1/retailer", require("./routes/retailerRoutes"));
+app.use("/api/v1/test", require("./routes/testRoute"));
 
 if (process.env.NODE_MODE === "production") {
   app.use("/", express.static(path.join(__dirname, "frontEnd", "build")));

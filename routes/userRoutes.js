@@ -18,6 +18,7 @@ const {
   fetchUserRolePrice,
   fetchTransactionId,
   getBankName,
+  getAddMoneyToWalletHistory,
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
 const router = express.Router();
@@ -44,10 +45,12 @@ router.post("/getBankName", getBankName); // can set multiple accounts
 router.post("/requestForWithdrawal", withdrawCommissionRequest); // can request for withdrawal
 
 // Get withdrawal history
-router.get("/getWithdrawalHistory", getWithdrawalHistory); // can request for withdrawal
+router.post("/getWithdrawalHistory", getWithdrawalHistory); // can request for withdrawal
 
 // Initiate Add Money to wallet || Admin can approve or reject
 router.post("/addMoneyToWallet", initiateAddMoneyToWallet); // can request for withdrawal
+
+router.post('/getAddMoneyToWalletHistory', getAddMoneyToWalletHistory)
 
 // Get coupon price
 router.post("/getCouponPrice", getCouponPrice);

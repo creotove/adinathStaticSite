@@ -394,11 +394,10 @@ const setAccountDetails = async (req, res) => {
 const withdrawCommissionRequest = async (req, res) => {
   try {
     const { uniqueId, amount, bankName } = req.body;
-    console.log(req.body);
     const user = await newUserModel.findOne({ uniqueId });
     if (!user) {
       return res.status(404).send({
-        error: "User not found in withdraw commission request",
+        message: "User not found in withdraw commission request",
         success: false,
       });
     }
@@ -408,10 +407,12 @@ const withdrawCommissionRequest = async (req, res) => {
         success: false,
       });
     }
+    
     const data = {
       uniqueId,
       bankName,
       amount,
+      userId: user._id,
     };
     const reqForWithdrawal = await withdrawalHistory.create(data);
     if (!reqForWithdrawal) {
@@ -420,6 +421,8 @@ const withdrawCommissionRequest = async (req, res) => {
         success: false,
       });
     }
+    user.totalCommissionEarned = user.totalCommissionEarned - amount;
+    await user.save();
     await reqForWithdrawal.save();
     if (reqForWithdrawal) {
       return res.status(200).send({
@@ -469,7 +472,9 @@ const getWithdrawalHistory = async (req, res) => {
 const getAccountDetails = async (req, res) => {
   try {
     const { uniqueId } = req.body;
-    const accDetails = await AccountDetails.find({ userId: uniqueId });
+    console.log(req.body);
+    const accDetails = await AccountDetails.find({ userId : uniqueId });
+    console.log(accDetails);
     if (accDetails.length === 0) {
       return res.status(200).send({
         error: "No account details found",
@@ -614,6 +619,29 @@ const getAllPartnersCreatedByUser = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+const getAddMoneyToWalletHistory = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const history = await addToWalletHistory.find({ userId });
+    if (!history) {
+      return res.status(404).send({
+        error: "No history found",
+        success: false,
+      });
+    }
+    return res.status(200).send({
+      data: history,
+      success: true,
+    });
+
+  }catch(error){
+    console.log(error)
+    return res.status(500).send({
+      error: "Internal Server Error",
+      success: false,
+    });
+  }
+}
 
 const authController = async (req, res) => {
   try {
@@ -657,6 +685,7 @@ module.exports = {
   getAllPartnersCreatedByUser,
   fetchTransactionId,
   getBankName,
+  getAddMoneyToWalletHistory
 };
 /* Works Perfectly fine
 

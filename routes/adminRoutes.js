@@ -1,10 +1,6 @@
 const express = require("express");
 const {
-    getAllMasterAdmins,
-    getAllAdmins,
-    getAllMasterDistributor,
-    getAllDistributor,
-    getAllRetailer,
+    
     searchUser,
     getUserFromQuery,
     getAllUsers
@@ -12,11 +8,7 @@ const {
 const router = express.Router();
 
 // All User fetching 
-router.get("/masterAdmin", getAllMasterAdmins);
-router.get("/admin", getAllAdmins);
-router.get("/masterDistributor", getAllMasterDistributor);
-router.get("/distributor", getAllDistributor);
-router.get("/retailer", getAllRetailer);
+
 router.get('/allUser',getAllUsers)
 
 

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const addTowalletHistory = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'newUser' },
     amount: Number,
     date: { type: Date, default: Date.now },
     status: {
@@ -8,7 +8,11 @@ const addTowalletHistory = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
-    transactionId: String
+    transactionId: String,
+    error:{
+        type:String,
+        default:'No error'
+    }
 
 })
 const addToWalletHistory = mongoose.model('addToWalletHistory', addTowalletHistory)

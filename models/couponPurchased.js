@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const couponPurchasedSchema = new mongoose.Schema({
-  retailerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the retailer
+  retailerId: { type: mongoose.Schema.Types.ObjectId, ref: 'newUser' }, // Reference to the retailer
+  uniqueId: String,
   quantity: Number,
   totalPrice: Number,
   purchaseDate: { type: Date, default: Date.now },
@@ -10,7 +11,7 @@ const couponPurchasedSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending',
   },
-  transactionId: String, // To store the transaction ID once it's provided
+  mobileNumber: Number,
 });
 
 const CouponPurchased = mongoose.model('CouponPurchased', couponPurchasedSchema);
