@@ -18,6 +18,7 @@ const {
   fetchUserRolePrice,
   fetchTransactionId,
   getBankName,
+  createComplaint,
   getAddMoneyToWalletHistory,
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
@@ -50,7 +51,7 @@ router.post("/getWithdrawalHistory", getWithdrawalHistory); // can request for w
 // Initiate Add Money to wallet || Admin can approve or reject
 router.post("/addMoneyToWallet", initiateAddMoneyToWallet); // can request for withdrawal
 
-router.post('/getAddMoneyToWalletHistory', getAddMoneyToWalletHistory)
+router.post("/getAddMoneyToWalletHistory", getAddMoneyToWalletHistory);
 
 // Get coupon price
 router.post("/getCouponPrice", getCouponPrice);
@@ -59,10 +60,10 @@ router.post("/getCouponPrice", getCouponPrice);
 router.post("/requestForApproval", requestForApproval);
 
 // Fetch user role price
-router.get("/fetchUserRolePrice",fetchUserRolePrice)
+router.get("/fetchUserRolePrice", fetchUserRolePrice);
 
 // Fetch transaction id
-router.post('/fetchTransactionId',fetchTransactionId)
+router.post("/fetchTransactionId", fetchTransactionId);
 
 //Auth || POST
 // router.post("/getUserData", authMiddleware, authController);
@@ -70,7 +71,8 @@ router.post("/getUserData", userAuthMiddleware, authController);
 
 router.post("/getCreatedPartners", getCreatedPartners);
 
-
 router.post("/getAllPartnersCreatedByUser", getAllPartnersCreatedByUser);
+
+router.post("/complaint", createComplaint);
 
 module.exports = router;

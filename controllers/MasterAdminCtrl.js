@@ -1,3 +1,4 @@
+const AlertModel = require("../models/AlertModel");
 const ApprovalModel = require("../models/ApprovalModel");
 const addToWalletHistory = require("../models/addToWalletHistory");
 const CouponPurchased = require("../models/couponPurchased");
@@ -372,7 +373,7 @@ const approveAddMoneyToWalletRequest = async (req, res) => {
         message: "User Not Found",
       });
     }
-    user.walletBalance = user.walletBalance + addMoneyToWalletRequest.amount; 
+    user.walletBalance = user.walletBalance + addMoneyToWalletRequest.amount;
     await user.save();
     addMoneyToWalletRequest.status = "approved";
     await addMoneyToWalletRequest.save();
@@ -489,7 +490,8 @@ const approveWalletWithdrawalRequest = async (req, res) => {
         message: "User Not Found",
       });
     }
-    user.totalCommissionEarned = user.totalCommissionEarned - walletWithdrawalRequest.amount;
+    user.totalCommissionEarned =
+      user.totalCommissionEarned - walletWithdrawalRequest.amount;
     await user.save();
 
     return res.status(200).send({
@@ -595,6 +597,7 @@ const calculateAndAssignCommissions = async (req, res) => {
   }
 };
 
+// Removed this api as it is not required starts here
 const getAllMasterAdmins = async (req, res) => {
   const masterAdmins = await newUserModel.find({ role: "Master Admin" });
   if (!masterAdmins) {
@@ -667,6 +670,8 @@ const getAllRetailer = async (req, res) => {
     data: retailer,
   });
 };
+// Removed this api as it is not required ends here
+
 const getAlLusers = async (req, res) => {
   const users = await newUserModel.find({});
   if (!users) {
@@ -681,6 +686,202 @@ const getAlLusers = async (req, res) => {
     data: users,
   });
 };
+
+const getUserNotPaidJoiningFee = async (req, res) => {
+  try {
+    const user = await newUserModel.find({ isPaidJoiningFee: false });
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "Users not found",
+      });
+    }
+    if (user.length === 0) {
+      return res.status(200).send({
+        success: true,
+        data: user,
+        message: "No users found who have not paid the joining fee",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      message: "Users fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+const getUserDetails = async (req, res) => {
+  try {
+    const users = await newUserModel
+      .find({})
+      .select("-_id name uniqueId mobileNumber panCard state city");
+    if (!users) {
+      return res.status(404).send({
+        success: false,
+        message: "Users not found",
+      });
+    }
+    if (users.length === 0) {
+      return res.status(200).send({
+        success: true,
+        data: users,
+        message: "No users found",
+      });
+    }
+
+    return res.status(200).send({
+      success: true,
+      message: "Users fetched successfully",
+      data: users,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
+
+const getCountForMasterAdminPanel = async (req, res) => {
+  try {
+    const pendingUser = await newUserModel.find({ status: "pending" });
+    const approvedUser = await newUserModel.find({ status: "approved" });
+    const rejectedUser = await newUserModel.find({ status: "rejected" });
+    const totalUser = await newUserModel.find({});
+    const pendingCoupon = await CouponPurchased.find({ status: "pending" });
+    const approvedCoupon = await CouponPurchased.find({ status: "approved" });
+    const rejectedCoupon = await CouponPurchased.find({ status: "rejected" });
+    const totalCoupon = await CouponPurchased.find({});
+    const pendingAddMoneyToWallet = await addToWalletHistory.find({
+      status: "pending",
+    });
+    const approvedAddMoneyToWallet = await addToWalletHistory.find({
+      status: "approved",
+    });
+    const rejectedAddMoneyToWallet = await addToWalletHistory.find({
+      status: "rejected",
+    });
+    const totalAddMoneyToWallet = await addToWalletHistory.find({});
+    const pendingWalletWithdrawal = await withdrawalHistory.find({
+      status: "pending",
+    });
+    const approvedWalletWithdrawal = await withdrawalHistory.find({
+      status: "approved",
+    });
+    const rejectedWalletWithdrawal = await withdrawalHistory.find({
+      status: "rejected",
+    });
+    const totalWalletWithdrawal = await withdrawalHistory.find({});
+    if (
+      !pendingUser ||
+      !approvedUser ||
+      !rejectedUser ||
+      !totalUser ||
+      !pendingCoupon ||
+      !approvedCoupon ||
+      !rejectedCoupon ||
+      !totalCoupon ||
+      !pendingAddMoneyToWallet ||
+      !approvedAddMoneyToWallet ||
+      !rejectedAddMoneyToWallet ||
+      !totalAddMoneyToWallet ||
+      !pendingWalletWithdrawal ||
+      !approvedWalletWithdrawal ||
+      !rejectedWalletWithdrawal ||
+      !totalWalletWithdrawal
+    ) {
+      return res.status(404).send({
+        success: false,
+        message: "Users not found",
+      });
+    }
+    const data = {
+      pendingUser: pendingUser.length,
+      approvedUser: approvedUser.length,
+      rejectedUser: rejectedUser.length,
+      totalUser: totalUser.length,
+      pendingCoupon: pendingCoupon.length,
+      approvedCoupon: approvedCoupon.length,
+      rejectedCoupon: rejectedCoupon.length,
+      totalCoupon: totalCoupon.length,
+      pendingAddMoneyToWallet: pendingAddMoneyToWallet.length,
+      approvedAddMoneyToWallet: approvedAddMoneyToWallet.length,
+      rejectedAddMoneyToWallet: rejectedAddMoneyToWallet.length,
+      totalAddMoneyToWallet: totalAddMoneyToWallet.length,
+      pendingWalletWithdrawal: pendingWalletWithdrawal.length,
+      approvedWalletWithdrawal: approvedWalletWithdrawal.length,
+      rejectedWalletWithdrawal: rejectedWalletWithdrawal.length,
+      totalWalletWithdrawal: totalWalletWithdrawal.length,
+    };
+    return res.status(200).send({
+      success: true,
+      message: "Users fetched successfully",
+      data: data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
+
+const changeAlert = async (req, res) => {
+  try {
+    const { setAlert } = req.body;
+    // 65311d28cfa85d1164740dc6
+    const alert = await AlertModel.findByIdAndUpdate(
+      "65311d28cfa85d1164740dc6",
+      { alert: setAlert }
+    );
+    if (!alert) {
+      return res.status(404).send({
+        success: false,
+        message: "Alert not found",
+      });
+    }
+    await alert.save();
+    return res.status(200).send({
+      success: true,
+      message: "Alert Created Successfully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+};
+
+const getAlert = async (req, res) => {
+  try {
+    const alert = await AlertModel.findById("65311d28cfa85d1164740dc6");
+    if (!alert) {
+      return res.status(404).send({
+        success: false,
+        message: "Alert not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "Alert fetched successfully",
+      data: alert,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+}
 
 module.exports = {
   approveUser,
@@ -705,4 +906,9 @@ module.exports = {
   getAllDistributor,
   getAllRetailer,
   getAlLusers,
+  getUserNotPaidJoiningFee,
+  getUserDetails,
+  getCountForMasterAdminPanel,
+  changeAlert,
+  getAlert,
 };

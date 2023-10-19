@@ -1,106 +1,117 @@
 const mongoose = require("mongoose");
-const newuserSchema = new mongoose.Schema({
+const newuserSchema = new mongoose.Schema(
+  {
     name: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     email: {
-        type: String,
-        required: true,
-        unique: true,
+      type: String,
+      required: true,
+      unique: true,
     },
     mobileNumber: {
-        type: String,
-        required: true,
-        unique: true,
+      type: String,
+      required: true,
+      unique: true,
     },
     password: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     status: {
-        type: String,
-        enum: ["pending", "approved", "rejected"],
-        default: "pending",
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     actualPriceOfCoupon: {
-        type: Number,
-        default: 100,
+      type: Number,
+      default: 100,
     },
-    state:{
-        type: String,
-        required: true,
+    state: {
+      type: String,
+      required: true,
     },
-    city :{
-        type: String,
-        required: true,
+    city: {
+      type: String,
+      required: true,
     },
-    pinCode:{
-        type: Number,
-        required: true,
+    pinCode: {
+      type: Number,
+      required: true,
     },
     role: {
-        type: String,
-        enum: ["Master Distributor", "Distributor", "Retailer", "Admin", "Master Admin"],
-        required: true,
+      type: String,
+      enum: [
+        "Master Distributor",
+        "Distributor",
+        "Retailer",
+        "Admin",
+        "Master Admin",
+      ],
+      required: true,
     },
-    partners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    createdBy: { type: String , ref: 'User' },
-    commissionOfCreatedByUser: { //jisne create kiya uska commissions
-        type: Number,
-        default: 0,
+    partners: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    createdBy: { type: String, ref: "User" },
+    commissionOfCreatedByUser: {
+      //jisne create kiya uska commissions
+      type: Number,
+      default: 0,
     },
     couponPrice: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
     },
     panCard: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     uniqueId: {
-        type: String,
-        default: null,
+      type: String,
+      default: null,
     },
     currentCommission: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
     },
     totalCommissionEarned: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
     },
     walletBalance: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
+    },
+    isPaidJoiningFee: {
+      type: Boolean,
+      default: false,
     },
     commissionEarned: [
-        {
-            commission: {
-                type: Number,
-                default: 0,
-            },
-            uniqueId: { type: String, ref: 'User' },
-            date: {
-                type: Date,
-                default: Date.now
-            }
-        }
+      {
+        commission: {
+          type: Number,
+          default: 0,
+        },
+        uniqueId: { type: String, ref: "User" },
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+      },
     ],
-
-}, { timestamps: true });
+  },
+  { timestamps: true }
+);
 const newUserModel = mongoose.model("newUser", newuserSchema);
 module.exports = newUserModel;
 
-    // commissionOfcreatedPartners: [{ //User jo create karega uska commission
-    //     commission: {
-    //         type: Number,
-    //         default: 0,
-    //     },
-    //     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    // }],
-
-
+// commissionOfcreatedPartners: [{ //User jo create karega uska commission
+//     commission: {
+//         type: Number,
+//         default: 0,
+//     },
+//     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+// }],
 
 /*
 {

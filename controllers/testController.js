@@ -91,13 +91,5 @@ module.exports = {
 //    }
 
 
-//Self did
-// 1. [x] Fixed coupon price to be a whole number
-// 2. [x] Withdraw ammount deducted from wallet
-// 3. [x] Add wallet request in admin panel
-// 4. [x] Add wallet withdrawal request in admin panel
-// 5. [x] Coupon request in admin panel
-// 6. [x] Add mobile number in coupon request
-// 7. [x] Optimize some code
-// 8. [x] Check scanner
-// 9. [x] Add to wallet in all section
+// 1. [ ] Add Employe sectiom in master admin panel [type with diff role : ["all access", "coupon based", "add to wallet", "all user"]]
+// 2. [ ] Access All request for new Users, coupon, add to wallet.

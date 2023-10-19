@@ -6,6 +6,7 @@ const newUserModel = require("../models/newUserModel");
 const withdrawalHistory = require("../models/withdrawalHistory");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const complaintModel = require("../models/ComplaintModel");
 
 const login = async (req, res) => {
   try {
@@ -201,7 +202,6 @@ const requestForApproval = async (req, res) => {
         success: false,
       });
     }
-    user.paidRolePrice = true;
     if (user.status === "pending") {
       const request = await ApprovalModel.create({
         userId,
@@ -219,6 +219,8 @@ const requestForApproval = async (req, res) => {
           success: false,
         });
       }
+      user.isPaidJoiningFee = true;
+      await user.save();
       return res.status(200).send({
         message: "Request sent successfully",
         success: true,
@@ -407,7 +409,7 @@ const withdrawCommissionRequest = async (req, res) => {
         success: false,
       });
     }
-    
+
     const data = {
       uniqueId,
       bankName,
@@ -473,7 +475,7 @@ const getAccountDetails = async (req, res) => {
   try {
     const { uniqueId } = req.body;
     console.log(req.body);
-    const accDetails = await AccountDetails.find({ userId : uniqueId });
+    const accDetails = await AccountDetails.find({ userId: uniqueId });
     console.log(accDetails);
     if (accDetails.length === 0) {
       return res.status(200).send({
@@ -633,16 +635,88 @@ const getAddMoneyToWalletHistory = async (req, res) => {
       data: history,
       success: true,
     });
-
-  }catch(error){
-    console.log(error)
+  } catch (error) {
+    console.log(error);
     return res.status(500).send({
       error: "Internal Server Error",
       success: false,
     });
   }
-}
+};
+const generateNextTicketId = async () => {
+  const lastComplaint = await complaintModel.findOne().sort({ date: "desc" });
 
+  if (lastComplaint) {
+    const lastTicketId = lastComplaint.ticketId;
+    const lastTicketIdNumber = parseInt(lastTicketId, 10);
+
+    // Generate the next serial number and format it with leading zeros
+    const nextTicketIdNumber = lastTicketIdNumber + 1;
+    const nextTicketId = String(nextTicketIdNumber).padStart(
+      lastTicketId.length,
+      "0"
+    );
+
+    return nextTicketId;
+  }
+
+  // If no previous complaints, start with "0001" or any preferred format
+  return "00001";
+};
+
+const createComplaint = async (req, res) => {
+  try {
+    const {
+      userId,
+      complaintTitle,
+      complaintMessage,
+      mobile,
+      firstName,
+      lastName,
+      email,
+      screenshot,
+    } = req.body;
+    const user = await newUserModel.findOne({ uniqueId: userId });
+    if (!user) {
+      return res.status(404).send({
+        error: "User not found in create complaint",
+        success: false,
+      });
+    }
+
+    // Generate the next ticket ID
+    const ticketId = await generateNextTicketId();
+
+    const complaintData = {
+      userId,
+      complaintTitle,
+      complaintMessage,
+      mobile,
+      firstName,
+      lastName,
+      email,
+      ticketId,
+      screenshot,
+    };
+    const newComplaint = await complaintModel.create(complaintData);
+
+    if (!newComplaint) {
+      return res.status(400).send({
+        error: "Something went wrong",
+        success: false,
+      });
+    }
+    await newComplaint.save();
+
+    return res.status(200).send({
+      message: "Complaint filed successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 const authController = async (req, res) => {
   try {
     // return console.log(req.body);
@@ -681,11 +755,12 @@ module.exports = {
   initiateAddMoneyToWallet,
   getCreatedPartners,
   authController,
+  createComplaint,
   getCouponPrice,
   getAllPartnersCreatedByUser,
   fetchTransactionId,
   getBankName,
-  getAddMoneyToWalletHistory
+  getAddMoneyToWalletHistory,
 };
 /* Works Perfectly fine
 

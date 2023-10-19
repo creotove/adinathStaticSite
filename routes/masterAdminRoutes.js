@@ -24,6 +24,11 @@ const {
   rejectWalletWithdrawalRequest,
   calculateAndAssignCommissions,
   getAlLusers,
+  getUserNotPaidJoiningFee,
+  getUserDetails,
+  getCountForMasterAdminPanel,
+  changeAlert,
+  getAlert,
 } = require("../controllers/MasterAdminCtrl");
 
 // router.get("/masterAdmin", getAllMasterAdmins);
@@ -86,5 +91,17 @@ router.patch(
   "/rejectWalletWithdrawalRequest/:id",
   rejectWalletWithdrawalRequest
 );
+
+router.get("/getUserNotPaidJoiningFee", getUserNotPaidJoiningFee);
+
+// Only user details
+router.get("/getUserDetails", getUserDetails);
+
+//try route
+router.get("/getCountForMasterAdminPanel", getCountForMasterAdminPanel);
+
+//Create alert
+router.patch("/changeAlert", changeAlert);
+router.get("/getAlert", getAlert);
 
 module.exports = router;
