@@ -29,6 +29,8 @@ const {
   getCountForMasterAdminPanel,
   changeAlert,
   getAlert,
+  createEmployee,
+  getEmployee,
 } = require("../controllers/MasterAdminCtrl");
 
 // router.get("/masterAdmin", getAllMasterAdmins);
@@ -103,5 +105,10 @@ router.get("/getCountForMasterAdminPanel", getCountForMasterAdminPanel);
 //Create alert
 router.patch("/changeAlert", changeAlert);
 router.get("/getAlert", getAlert);
+
+//POST || Create Employee
+router.post("/add-employee", createEmployee);
+//GET || Get Employee
+router.get("/get-employee", getEmployee);
 
 module.exports = router;

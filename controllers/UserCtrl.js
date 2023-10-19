@@ -7,36 +7,61 @@ const withdrawalHistory = require("../models/withdrawalHistory");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const complaintModel = require("../models/ComplaintModel");
+const EmployeeModel = require("../models/EmployeeModel");
 
 const login = async (req, res) => {
   try {
     const { uniqueId, password } = req.body;
     // After Applying JWT
     const user = await newUserModel.findOne({ uniqueId });
-    if (!user) {
+    const employee = await EmployeeModel.findOne({ uniqueId });
+    if (!user && !employee) {
       return res.status(400).json({
         success: false,
         message: "User Not Found in login",
       });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Credentials",
+
+    if (employee) {
+      console.log("employee");
+      const isMatchEmployee = await bcrypt.compare(password, employee.password);
+      if (!isMatchEmployee) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid Credentials",
+        });
+      }
+      const token = jwt.sign({ id: employee._id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+      });
+      return res.status(200).json({
+        success: true,
+        token,
+        data: employee,
+        message: "Login Successfully",
       });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-    res.status(200).json({
-      success: true,
-      token,
-      data: user,
-      message: "Login Successfully",
-    });
+    if (user) {
+      console.log("user");
+      const isMatchUser = await bcrypt.compare(password, user.password);
+      if (!isMatchUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid Credentials",
+        });
+      }
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+      });
+      res.status(200).json({
+        success: true,
+        token,
+        data: user,
+        message: "Login Successfully",
+      });
+    }
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -717,21 +742,52 @@ const createComplaint = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-const authController = async (req, res) => {
+const getComplaints = async (req, res) => {
   try {
-    // return console.log(req.body);
-    const user = await newUserModel.findById({ _id: req.body._id });
-    user.password = undefined;
-    if (!user) {
-      return res.status(200).send({
-        message: "user not found in auth controller",
+    const { userId } = req.body;
+    const complaint = await complaintModel.find({ userId });
+    if (!complaint) {
+      return res.status(404).send({
+        error: "No complaints found",
         success: false,
       });
     }
     return res.status(200).send({
+      data: complaint,
       success: true,
-      data: user,
     });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      error: "Internal Server Error",
+      success: false,
+    });
+  }
+};
+const authController = async (req, res) => {
+  try {
+    const user = await newUserModel.findById({ _id: req.body._id });
+    const employee = await EmployeeModel.findById({ _id: req.body._id });
+    if (!user && !employee) {
+      return res.status(404).send({
+        message: "user not found in auth controller",
+        success: false,
+      });
+    }
+    if (user) {
+      user.password = undefined;
+      return res.status(200).send({
+        success: true,
+        data: user,
+      });
+    }
+    if (employee) {
+      employee.password = undefined;
+      return res.status(200).send({
+        success: true,
+        data: employee,
+      });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send({
@@ -741,6 +797,7 @@ const authController = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   login, // All Users
   createUser, // Every user can create a user except Retailer
@@ -761,6 +818,7 @@ module.exports = {
   fetchTransactionId,
   getBankName,
   getAddMoneyToWalletHistory,
+  getComplaints,
 };
 /* Works Perfectly fine
 

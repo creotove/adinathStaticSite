@@ -1,9 +1,11 @@
 const AlertModel = require("../models/AlertModel");
 const ApprovalModel = require("../models/ApprovalModel");
+const EmployeeModel = require("../models/EmployeeModel");
 const addToWalletHistory = require("../models/addToWalletHistory");
 const CouponPurchased = require("../models/couponPurchased");
 const newUserModel = require("../models/newUserModel");
 const withdrawalHistory = require("../models/withdrawalHistory");
+const bcrypt = require("bcryptjs");
 
 const approveUser = async (req, res) => {
   try {
@@ -881,8 +883,77 @@ const getAlert = async (req, res) => {
       success: false,
     });
   }
-}
+};
+const createEmployee = async (req, res) => {
+  try {
+    const { name, mobileNumber, uniqueId, perms } = req.body;
+    const existingEmployee = await EmployeeModel.findOne({ uniqueId });
+    if (existingEmployee) {
+      return res.status(400).send({
+        message: "Employee already exists",
+        success: false,
+      });
+    }
+    const password = req.body.password;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
+    const data = {
+      name,
+      mobileNumber,
+      perms,
+      uniqueId,
+      password: hashedPassword,
+    };
+    const newEmployee = await EmployeeModel.create(data);
+    if (!newEmployee) {
+      return res.status(400).send({
+        message: "Cannot Add New Employee",
+        success: false,
+      });
+    }
+    await newEmployee.save();
+
+    return res.status(200).send({
+      message: "Employee Added Successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+const getEmployee = async (req, res) => {
+  try {
+    const employee = await EmployeeModel.find({});
+    if (!employee) {
+      return res.status(404).send({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+    if (employee.length === 0) {
+      return res.status(200).send({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "Employee fetched successfully",
+      data: employee,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
 module.exports = {
   approveUser,
   rejectUser,
@@ -911,4 +982,6 @@ module.exports = {
   getCountForMasterAdminPanel,
   changeAlert,
   getAlert,
+  createEmployee,
+  getEmployee,
 };

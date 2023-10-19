@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunk_spellgrowth_adi_nath_group=self.webpackChunk_spellgrowth_adi_nath_group||[]).push([[566],{12566:function(e,l,n){n.r(l);n(72791);var r=n(80184);l.default=function(){return(0,r.jsx)("div",{children:"AllUserComplaints"})}}}]);
-//# sourceMappingURL=566.4cdf4079.chunk.js.map

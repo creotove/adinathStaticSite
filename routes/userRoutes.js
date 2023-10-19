@@ -20,6 +20,7 @@ const {
   getBankName,
   createComplaint,
   getAddMoneyToWalletHistory,
+  getComplaints,
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
 const router = express.Router();
@@ -73,6 +74,7 @@ router.post("/getCreatedPartners", getCreatedPartners);
 
 router.post("/getAllPartnersCreatedByUser", getAllPartnersCreatedByUser);
 
-router.post("/complaint", createComplaint);
+router.post("/add-complaint", createComplaint);
+router.post("/get-complaints", getComplaints);
 
 module.exports = router;
