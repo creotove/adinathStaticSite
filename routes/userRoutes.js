@@ -27,7 +27,8 @@ const {
   getCouponPriceOfEmp,
   changeCouponPriceofEmp,
   createUserByEmp,
-  getAllPartnersCreatedByEmp
+  getAllPartnersCreatedByEmp,
+  getRolePrice
   
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
@@ -94,5 +95,7 @@ router.post("/getCouponPriceOfEmp", getCouponPriceOfEmp);
 router.post("/changeCouponPriceofEmp", changeCouponPriceofEmp);
 router.post("/createUserByEmp", createUserByEmp);
 router.post("/getAllPartnersCreatedByEmp", getAllPartnersCreatedByEmp);
+router.post("/getRolePrice",  getRolePrice);
+
 
 module.exports = router;

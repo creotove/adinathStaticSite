@@ -33,6 +33,8 @@ const {
   getEmployee,
   getUserPendingForPsa,
   addPSA,
+  getUsersComplaints,
+  searchUser,
 } = require("../controllers/MasterAdminCtrl");
 
 // router.get("/masterAdmin", getAllMasterAdmins);
@@ -118,5 +120,11 @@ router.get("/getUserPendingForPsa", getUserPendingForPsa);
 
 //POST || Add PSA for retailer
 router.post("/addPSA", addPSA);
+
+//GET || Get all users complaints
+router.get('/getUserComplaints', getUsersComplaints);
+
+//POST || Get user by search
+router.post("/searchUser",  searchUser);
 
 module.exports = router;

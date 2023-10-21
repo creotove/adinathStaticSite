@@ -8,6 +8,7 @@ const withdrawalHistory = require("../models/withdrawalHistory");
 const bcrypt = require("bcryptjs");
 const PSA = require("../models/PSAmodelRetailer");
 const RolePriceModel = require("../models/RolePriceModel");
+const complaintModel = require("../models/ComplaintModel");
 
 const getRolePrice = async (req, res) => {
   try {
@@ -1097,12 +1098,7 @@ const getAlert = async (req, res) => {
 };
 const createEmployee = async (req, res) => {
   try {
-    const {
-      name,
-      mobileNumber,
-      uniqueId,
-      perms,
-    } = req.body;
+    const { name, mobileNumber, uniqueId, perms } = req.body;
     const existingEmployee = await EmployeeModel.findOne({ uniqueId });
     if (existingEmployee) {
       return res.status(400).send({
@@ -1120,7 +1116,6 @@ const createEmployee = async (req, res) => {
         message: "Master Admin not found",
       });
     }
-    
 
     const data = {
       name,
@@ -1128,8 +1123,8 @@ const createEmployee = async (req, res) => {
       perms,
       uniqueId,
       password: hashedPassword,
-      actualPriceOfCoupon : masterAdmin.actualPriceOfCoupon,
-      couponPrice : masterAdmin.couponPrice,
+      actualPriceOfCoupon: masterAdmin.actualPriceOfCoupon,
+      couponPrice: masterAdmin.couponPrice,
     };
     const newEmployee = await EmployeeModel.create(data);
     if (!newEmployee) {
@@ -1265,6 +1260,64 @@ const addPSA = async (req, res) => {
     });
   }
 };
+const getUsersComplaints = async (req, res) => {
+  const compliants = await complaintModel.find({});
+  if (!compliants) {
+    return res.status(404).send({
+      success: false,
+      message: "No Compliants found",
+    });
+  }
+
+  const page = parseInt(req.query.page);
+  const limit = parseInt(req.query.limit);
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const results = {};
+  results.totalCount = compliants.length;
+  results.totalPages = Math.ceil(compliants.length / limit);
+  if (endIndex < compliants.length) {
+    results.next = {
+      page: page + 1,
+      limit: limit,
+    };
+  }
+  if (startIndex > 0) {
+    results.previous = {
+      page: page - 1,
+      limit: limit,
+    };
+  }
+  results.results = compliants.slice(startIndex, endIndex);
+  return res.status(200).send({
+    data: results,
+    success: true,
+    message: "Complaints Fetched Successfully",
+  });
+};
+const searchUser = async (req, res) => {
+  try {
+    const { search } = req.body;
+    const user = await newUserModel.findOne({ uniqueId:search }).select("-_id -password -__v -isPaidJoiningFee -psaSet -updatedAt ");
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "User fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
 
 module.exports = {
   approveUser,
@@ -1298,4 +1351,6 @@ module.exports = {
   getEmployee,
   getUserPendingForPsa,
   addPSA,
+  getUsersComplaints,
+  searchUser,
 };

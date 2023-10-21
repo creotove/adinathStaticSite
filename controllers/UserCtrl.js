@@ -871,9 +871,9 @@ const getAllPartnersCreatedByEmp = async (req, res) => {
     const { uniqueId } = req.body;
 
     // Find the user who created partners based on uniqueId
-    const user = await EmployeeModel
-      .findOne({ uniqueId })
-      .select("uniqueId role name panCard aadharCard createdBy mobileNumber)");
+    const user = await EmployeeModel.findOne({ uniqueId }).select(
+      "uniqueId role name panCard aadharCard createdBy mobileNumber)"
+    );
 
     if (!user) {
       return res
@@ -928,7 +928,6 @@ const getAllPartnersCreatedByEmp = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
-
 
 const getAddMoneyToWalletHistory = async (req, res) => {
   try {
@@ -1192,6 +1191,94 @@ const getPsaDetails = async (req, res) => {
   }
 };
 
+const getRolePrice = async (req, res) => {
+  try {
+    const { role } = req.body;
+    let data = {};
+    if (role === "Retailer") {
+      const fieldsToSelect = ["admin", "masterDistributor", "distributor","-_id"];
+      const rolePrice = await RolePriceModel.findOne(
+        {},
+        fieldsToSelect.join(" ")
+      ) // The fields are joined with a space
+        .then((document) => {
+          if (document) {
+            data = document;
+          } else {
+            console.log("No documents found in the collection.");
+          }
+        })
+        .catch((err) => {
+          console.error("Error:", err);
+          // Handle the error
+        });
+      return res.status(200).send({
+        success: true,
+        data,
+      });
+    }
+    if (role === "Distributor") {
+      const fieldsToSelect = ["admin", "masterDistributor","-_id"];
+      const rolePrice = await RolePriceModel.findOne(
+        {},
+        fieldsToSelect.join(" ")
+      ) // The fields are joined with a space
+        .then((document) => {
+          if (document) {
+            data = document;
+          } else {
+            console.log("No documents found in the collection.");
+          }
+        })
+        .catch((err) => {
+          console.error("Error:", err);
+          // Handle the error
+        });
+
+      return res.status(200).send({
+        success: true,
+        data,
+      });
+    }
+    if (role === "Master Distributor") {
+      const fieldsToSelect = ["admin","-_id"];
+      const data = {};
+      const rolePrice = await RolePriceModel.findOne(
+        {},
+        fieldsToSelect.join(" ")
+      ) // The fields are joined with a space
+        .then((document) => {
+          if (document) {
+            data = document;
+          } else {
+            console.log("No documents found in the collection.");
+          }
+        })
+        .catch((err) => {
+          console.error("Error:", err);
+          // Handle the error
+        });
+      return res.status(200).send({
+        success: true,
+        data,
+      });
+    }
+    if (role === "Admin") {
+      res.status(200).send({
+        success: true,
+        message: "No price for admin",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+      error,
+    });
+  }
+};
+
 module.exports = {
   login, // All Users
   createUser, // Every user can create a user except Retailer
@@ -1220,6 +1307,7 @@ module.exports = {
   changeCouponPriceofEmp,
   createUserByEmp,
   getAllPartnersCreatedByEmp,
+  getRolePrice,
 };
 /* Works Perfectly fine
 
