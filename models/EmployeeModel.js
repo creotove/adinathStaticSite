@@ -18,6 +18,14 @@ const employeeSchema = new mongoose.Schema({
     ],
     required: true,
   },
+  actualPriceOfCoupon: {
+    type: Number,
+    default: 100,
+  },
+  couponPrice: {
+    type: Number,
+    default: 0,
+  },
   uniqueId: {
     type: String,
     unique: true,

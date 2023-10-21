@@ -7,6 +7,61 @@ const newUserModel = require("../models/newUserModel");
 const withdrawalHistory = require("../models/withdrawalHistory");
 const bcrypt = require("bcryptjs");
 const PSA = require("../models/PSAmodelRetailer");
+const RolePriceModel = require("../models/RolePriceModel");
+
+const getRolePrice = async (req, res) => {
+  try {
+    const _id = "6532bfa9a10c59e888c04106";
+    const changePirce = await RolePriceModel.findById(_id);
+    if (!changePirce) {
+      return res.status(404).send({
+        success: false,
+        message: "Role Price not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "Role Price fetched successfully",
+      data: changePirce,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const changeRolePrice = async (req, res) => {
+  try {
+    const _id = "6532bfa9a10c59e888c04106";
+    const changedPrices = await RolePriceModel.findById(_id);
+    if (!changedPrices) {
+      return res.status(404).send({
+        success: false,
+        message: "Role Price not found",
+      });
+    }
+    changedPrices.masterAdmin = req.body.masterAdmin;
+    changedPrices.admin = req.body.admin;
+    changedPrices.masterDistributor = req.body.masterDistributor;
+    changedPrices.distributor = req.body.distributor;
+    changedPrices.retailer = req.body.retailer;
+    await changedPrices.save();
+    return res.status(200).send({
+      success: true,
+      message: "Role Price Changed successfully",
+      data: changedPrices,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 
 const approveUser = async (req, res) => {
   try {
@@ -589,7 +644,7 @@ const approveWalletWithdrawalRequest = async (req, res) => {
         message: "User Not Found",
       });
     }
-   
+
     await walletWithdrawalRequest.save();
 
     return res.status(200).send({
@@ -1042,7 +1097,12 @@ const getAlert = async (req, res) => {
 };
 const createEmployee = async (req, res) => {
   try {
-    const { name, mobileNumber, uniqueId, perms } = req.body;
+    const {
+      name,
+      mobileNumber,
+      uniqueId,
+      perms,
+    } = req.body;
     const existingEmployee = await EmployeeModel.findOne({ uniqueId });
     if (existingEmployee) {
       return res.status(400).send({
@@ -1053,6 +1113,14 @@ const createEmployee = async (req, res) => {
     const password = req.body.password;
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const masterAdmin = await newUserModel.findOne({ role: "Master Admin" });
+    if (!masterAdmin) {
+      return res.status(404).send({
+        success: false,
+        message: "Master Admin not found",
+      });
+    }
+    
 
     const data = {
       name,
@@ -1060,6 +1128,8 @@ const createEmployee = async (req, res) => {
       perms,
       uniqueId,
       password: hashedPassword,
+      actualPriceOfCoupon : masterAdmin.actualPriceOfCoupon,
+      couponPrice : masterAdmin.couponPrice,
     };
     const newEmployee = await EmployeeModel.create(data);
     if (!newEmployee) {

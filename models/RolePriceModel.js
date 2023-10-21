@@ -21,7 +21,7 @@ const RolePriceSchema = new mongoose.Schema({
         default: 21
     },
 });
-const RolePriceModel = mongoose.model('Role Price', RolePriceSchema);
+const RolePriceModel = mongoose.model('priceOfRole', RolePriceSchema);
 module.exports = RolePriceModel;
 
 

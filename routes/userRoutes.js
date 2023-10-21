@@ -24,6 +24,11 @@ const {
   getPsaDetails,
   registerUserViaSite,
   transfertoUser,
+  getCouponPriceOfEmp,
+  changeCouponPriceofEmp,
+  createUserByEmp,
+  getAllPartnersCreatedByEmp
+  
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
 const router = express.Router();
@@ -84,5 +89,10 @@ router.post("/get-complaints", getComplaints);
 router.post("/get-psa-details", getPsaDetails);
 
 router.post("/transfertoUser", transfertoUser);
+
+router.post("/getCouponPriceOfEmp", getCouponPriceOfEmp);
+router.post("/changeCouponPriceofEmp", changeCouponPriceofEmp);
+router.post("/createUserByEmp", createUserByEmp);
+router.post("/getAllPartnersCreatedByEmp", getAllPartnersCreatedByEmp);
 
 module.exports = router;
