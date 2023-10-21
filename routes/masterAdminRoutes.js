@@ -31,6 +31,8 @@ const {
   getAlert,
   createEmployee,
   getEmployee,
+  getUserPendingForPsa,
+  addPSA,
 } = require("../controllers/MasterAdminCtrl");
 
 // router.get("/masterAdmin", getAllMasterAdmins);
@@ -110,5 +112,11 @@ router.get("/getAlert", getAlert);
 router.post("/add-employee", createEmployee);
 //GET || Get Employee
 router.get("/get-employee", getEmployee);
+
+//GET || Pending retailer for PSA
+router.get("/getUserPendingForPsa", getUserPendingForPsa);
+
+//POST || Add PSA for retailer
+router.post("/addPSA", addPSA);
 
 module.exports = router;

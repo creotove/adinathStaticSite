@@ -9,31 +9,31 @@ const initiateCouponPurchase = async (req, res) => {
     const user = await newUserModel.findOne({
       uniqueId: userId,
     });
+    console.log(user);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     const totalAmount = singleCouponPrice * quantity;
-    user.walletBalance = user.walletBalance - totalAmount;
     
     // Calculate total coupon price
-    const totalCouponPrice = singleCouponPrice * quantity;
     
     // Check if user has enough balance to purchase the coupon
-    if (user.walletBalance < totalCouponPrice) {
+    if (user.walletBalance < totalAmount) {
       return res.status(200).send({
         message: "Insufficient wallet balance",
         success: false,
       });
     }
+    user.walletBalance = user.walletBalance - totalAmount;
     
     
     // Create a new CouponPurchased entry to store the purchase details as pending
     const couponPurchased = new CouponPurchased({
-      retailerId: userId,
+      retailerId: user._id,
+      uniqueId: user.uniqueId,
       quantity,
-      totalPrice: totalCouponPrice,
-      status: "pending", // You can define statuses like 'pending', 'approved', 'rejected'
+      totalPrice: totalAmount,
       mobileNumber : user.mobileNumber,
     });
     await user.save();

@@ -6,6 +6,7 @@ const CouponPurchased = require("../models/couponPurchased");
 const newUserModel = require("../models/newUserModel");
 const withdrawalHistory = require("../models/withdrawalHistory");
 const bcrypt = require("bcryptjs");
+const PSA = require("../models/PSAmodelRetailer");
 
 const approveUser = async (req, res) => {
   try {
@@ -24,7 +25,7 @@ const approveUser = async (req, res) => {
     // Find the user in the database and update the status to "approved"
     const user = await newUserModel.findOneAndUpdate(
       { uniqueId },
-      { status: "approved" }
+      { status: "approved", isPaidJoiningFee: true }
     );
     user.save();
     if (!user) {
@@ -47,12 +48,15 @@ const approveUser = async (req, res) => {
 };
 const rejectUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { uniqueId } = req.body;
 
     // Find the user in the database and update the status to "rejected"
-    const user = await newUserModel.findByIdAndUpdate(userId, {
-      status: "rejected",
-    });
+    const user = await newUserModel.findOneAndUpdate(
+      { uniqueId },
+      {
+        status: "rejected",
+      }
+    );
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -77,12 +81,25 @@ const rejectCouponPurchase = async (req, res) => {
         .status(404)
         .json({ error: "Coupon purchase request not found" });
     }
-
+    // Find the user who made the coupon purchase request
+    const uniqueId = couponPurchase.uniqueId;
+    const addMoneyBackToWallet = await newUserModel.findOne({ uniqueId });
+    if (!addMoneyBackToWallet) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    addMoneyBackToWallet.walletBalance =
+      addMoneyBackToWallet.walletBalance + couponPurchase.totalPrice;
+    await addMoneyBackToWallet.save();
     // Update the coupon purchase status to 'rejected'
     couponPurchase.status = "rejected";
     await couponPurchase.save();
 
-    res.status(200).json({ message: "Coupon purchase request rejected" });
+    res
+      .status(200)
+      .json({ message: "Coupon purchase request rejected", success: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -126,36 +143,43 @@ const getUserForApproval = async (req, res) => {
 };
 const getRetailerForApproval = async (req, res) => {
   try {
-    // Find all users with status 'pending' from the newUserModel
-    const pendingRetailer = await newUserModel.find({
-      role: "Retailer",
-      status: "pending",
-    });
+    const pendingRetailer = await newUserModel
+      .find({
+        role: "Retailer",
+        status: "pending",
+      })
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
 
-    // Create an array to store the results
-    const usersWithTransactionInfo = [];
-
-    // Loop through each pending user
-    for (const user of pendingRetailer) {
-      // Find the corresponding ApprovalModel entry for the user
-      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
-      console.log(approvalInfo);
-
-      // If an approvalInfo entry exists, add it to the result
-      if (approvalInfo) {
-        usersWithTransactionInfo.push({
-          name: user.name,
-          uniqueId: user.uniqueId,
-          role: user.role,
-          transactionId: approvalInfo.transactionId,
-          paid: approvalInfo.paid,
-        });
-      }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingRetailer.length;
+    results.totalPages = Math.ceil(pendingRetailer.length / limit);
+    if (endIndex < pendingRetailer.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingRetailer.slice(startIndex, endIndex);
+    if (!pendingRetailer) {
+      return res.status(404).send({
+        success: false,
+        message: "No Retailer Found",
+      });
     }
     return res.status(200).send({
-      data: usersWithTransactionInfo,
+      data: results,
       success: true,
-      message: "All User Fetched",
+      message: "Retailers Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -163,39 +187,47 @@ const getRetailerForApproval = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 //Works fine
 const getMasterDistributorForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
-    const pendingMasterDistributor = await newUserModel.find({
-      role: "Master Distributor",
-      status: "pending",
-    });
-
-    // Create an array to store the results
-    const usersWithTransactionInfo = [];
-
-    // Loop through each pending user
-    for (const user of pendingMasterDistributor) {
-      // Find the corresponding ApprovalModel entry for the user
-      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
-      console.log(approvalInfo);
-
-      // If an approvalInfo entry exists, add it to the result
-      if (approvalInfo) {
-        usersWithTransactionInfo.push({
-          name: user.name,
-          uniqueId: user.uniqueId,
-          role: user.role,
-          transactionId: approvalInfo.transactionId,
-          paid: approvalInfo.paid,
-        });
-      }
+    const pendingMasterDistributor = await newUserModel
+      .find({
+        role: "Master Distributor",
+        status: "pending",
+      })
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingMasterDistributor.length;
+    results.totalPages = Math.ceil(pendingMasterDistributor.length / limit);
+    if (endIndex < pendingMasterDistributor.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingMasterDistributor.slice(startIndex, endIndex);
+    if (!pendingMasterDistributor) {
+      return res.status(404).send({
+        success: false,
+        message: "No Master Distributor Found",
+      });
     }
     return res.status(200).send({
-      data: usersWithTransactionInfo,
+      data: results,
       success: true,
-      message: "All User Fetched",
+      message: "Master Distributor Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -207,35 +239,43 @@ const getMasterDistributorForApproval = async (req, res) => {
 const getDistributorForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
-    const pendingDistributor = await newUserModel.find({
-      status: "pending",
-      role: "Distributor",
-    });
+    const pendingDistributor = await newUserModel
+      .find({
+        status: "pending",
+        role: "Distributor",
+      })
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
 
-    // Create an array to store the results
-    const usersWithTransactionInfo = [];
-
-    // Loop through each pending user
-    for (const user of pendingDistributor) {
-      // Find the corresponding ApprovalModel entry for the user
-      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
-      console.log(approvalInfo);
-
-      // If an approvalInfo entry exists, add it to the result
-      if (approvalInfo) {
-        usersWithTransactionInfo.push({
-          name: user.name,
-          uniqueId: user.uniqueId,
-          role: user.role,
-          transactionId: approvalInfo.transactionId,
-          paid: approvalInfo.paid,
-        });
-      }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingDistributor.length;
+    results.totalPages = Math.ceil(pendingDistributor.length / limit);
+    if (endIndex < pendingDistributor.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingDistributor.slice(startIndex, endIndex);
+    if (!pendingDistributor) {
+      return res.status(404).send({
+        success: false,
+        message: "Distributor Found",
+      });
     }
     return res.status(200).send({
-      data: usersWithTransactionInfo,
+      data: results,
       success: true,
-      message: "All User Fetched",
+      message: "Distributor Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -251,31 +291,37 @@ const getAdminForApproval = async (req, res) => {
       role: "Admin",
       status: "pending",
     });
-
-    // Create an array to store the results
-    const usersWithTransactionInfo = [];
-
-    // Loop through each pending user
-    for (const user of pendingAdmin) {
-      // Find the corresponding ApprovalModel entry for the user
-      const approvalInfo = await ApprovalModel.findOne({ userId: user._id });
-      console.log(approvalInfo);
-
-      // If an approvalInfo entry exists, add it to the result
-      if (approvalInfo) {
-        usersWithTransactionInfo.push({
-          name: user.name,
-          uniqueId: user.uniqueId,
-          role: user.role,
-          transactionId: approvalInfo.transactionId,
-          paid: approvalInfo.paid,
-        });
-      }
+    if (!pendingAdmin) {
+      return res.status(404).send({
+        success: false,
+        message: "No Admin Found",
+      });
     }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingAdmin.length;
+    results.totalPages = Math.ceil(pendingAdmin.length / limit);
+    if (endIndex < pendingAdmin.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingAdmin.slice(startIndex, endIndex);
+
     return res.status(200).send({
-      data: usersWithTransactionInfo,
+      data: results,
       success: true,
-      message: "All User Fetched",
+      message: "Admin Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -295,18 +341,31 @@ const getCouponRequests = async (req, res) => {
         message: "No Coupon Requests Found",
       });
     }
-
-    if (pendingCouponRequests.length === 0) {
-      return res.status(200).send({
-        success: false,
-        message: "No Coupon Requests Found",
-      });
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingCouponRequests.length;
+    results.totalPages = Math.ceil(pendingCouponRequests.length / limit);
+    if (endIndex < pendingCouponRequests.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
     }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingCouponRequests.slice(startIndex, endIndex);
 
     return res.status(200).send({
-      data: pendingCouponRequests,
+      data: results,
       success: true,
-      message: "All Coupon Requests Fetched",
+      message: "Admin Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -329,18 +388,36 @@ const getAddMoneyToWalletRequests = async (req, res) => {
         message: "No Add Money To Wallet Requests Found",
       });
     }
-
-    if (pendingAddMoneyToWalletRequests.length === 0) {
-      return res.status(200).send({
-        success: false,
-        message: "No Add Money To Wallet Requests Found",
-      });
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingAddMoneyToWalletRequests.length;
+    results.totalPages = Math.ceil(
+      pendingAddMoneyToWalletRequests.length / limit
+    );
+    if (endIndex < pendingAddMoneyToWalletRequests.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
     }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingAddMoneyToWalletRequests.slice(
+      startIndex,
+      endIndex
+    );
 
     return res.status(200).send({
-      data: pendingAddMoneyToWalletRequests,
+      data: results,
       success: true,
-      message: "All Add Money To Wallet Requests Fetched",
+      message: "Admin Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -434,25 +511,46 @@ const getWalletWithdrawalRequest = async (req, res) => {
       .find({
         status: "pending",
       })
-      .populate("userId");
+      .populate({
+        path: "userId",
+        select: "name uniqueId", // Exclude the password field
+      });
     if (!pendingWalletWithdrawalRequest) {
       return res.status(404).send({
         success: false,
         message: "No Wallet Withdrawal Requests Found",
       });
     }
-
-    if (pendingWalletWithdrawalRequest.length === 0) {
-      return res.status(200).send({
-        success: false,
-        message: "No Wallet Withdrawal Requests Found",
-      });
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = pendingWalletWithdrawalRequest.length;
+    results.totalPages = Math.ceil(
+      pendingWalletWithdrawalRequest.length / limit
+    );
+    if (endIndex < pendingWalletWithdrawalRequest.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
     }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = pendingWalletWithdrawalRequest.slice(
+      startIndex,
+      endIndex
+    );
 
     return res.status(200).send({
-      data: pendingWalletWithdrawalRequest,
+      data: results,
       success: true,
-      message: "All Wallet Withdrawal Requests Fetched",
+      message: "Admin Fetched Successfully",
     });
   } catch (error) {
     // Handle errors here
@@ -482,7 +580,6 @@ const approveWalletWithdrawalRequest = async (req, res) => {
 
     walletWithdrawalRequest.status = "approved";
     walletWithdrawalRequest.transactionId = transactionId;
-    await walletWithdrawalRequest.save();
 
     const uniqueId = walletWithdrawalRequest.uniqueId;
     const user = await newUserModel.findOne({ uniqueId });
@@ -492,9 +589,8 @@ const approveWalletWithdrawalRequest = async (req, res) => {
         message: "User Not Found",
       });
     }
-    user.totalCommissionEarned =
-      user.totalCommissionEarned - walletWithdrawalRequest.amount;
-    await user.save();
+   
+    await walletWithdrawalRequest.save();
 
     return res.status(200).send({
       success: true,
@@ -528,7 +624,19 @@ const rejectWalletWithdrawalRequest = async (req, res) => {
     }
 
     walletWithdrawalRequest.status = "rejected";
-    walletWithdrawalRequest.error = "Transaction Id Not Found";
+    walletWithdrawalRequest.error = "cannot find account number";
+    const user = await newUserModel.findOne({
+      uniqueId: walletWithdrawalRequest.uniqueId,
+    });
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User Not Found",
+      });
+    }
+    user.walletBalance = user.walletBalance + walletWithdrawalRequest.amount;
+
+    await user.save();
     await walletWithdrawalRequest.save();
 
     return res.status(200).send({
@@ -682,16 +790,40 @@ const getAlLusers = async (req, res) => {
       message: "Users not found",
     });
   }
+  const page = parseInt(req.query.page);
+  const limit = parseInt(req.query.limit);
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const results = {};
+  results.totalCount = users.length;
+  results.totalPages = Math.ceil(users.length / limit);
+  if (endIndex < users.length) {
+    results.next = {
+      page: page + 1,
+      limit: limit,
+    };
+  }
+  if (startIndex > 0) {
+    results.previous = {
+      page: page - 1,
+      limit: limit,
+    };
+  }
+  results.results = users.slice(startIndex, endIndex);
   return res.status(200).send({
+    data: results,
     success: true,
-    message: "Users fetched successfully",
-    data: users,
+    message: "Admin Fetched Successfully",
   });
 };
 
+//Routes(frontEnd) me change karna hai,Not Paid me change karna hai, master admin routes
 const getUserNotPaidJoiningFee = async (req, res) => {
   try {
-    const user = await newUserModel.find({ isPaidJoiningFee: false });
+    const user = await newUserModel.find({
+      isPaidJoiningFee: false,
+      status: "pending",
+    });
     if (!user) {
       return res.status(404).send({
         success: false,
@@ -719,6 +851,17 @@ const getUserNotPaidJoiningFee = async (req, res) => {
     });
   }
 };
+const getUserRegisteredViaSite = async (req, res) => {
+  try {
+    const users = await newUserModel.find({ registeredViaSite: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(404).send({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
 const getUserDetails = async (req, res) => {
   try {
     const users = await newUserModel
@@ -730,18 +873,31 @@ const getUserDetails = async (req, res) => {
         message: "Users not found",
       });
     }
-    if (users.length === 0) {
-      return res.status(200).send({
-        success: true,
-        data: users,
-        message: "No users found",
-      });
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = users.length;
+    results.totalPages = Math.ceil(users.length / limit);
+    if (endIndex < users.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
     }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = users.slice(startIndex, endIndex);
 
     return res.status(200).send({
+      data: results,
       success: true,
-      message: "Users fetched successfully",
-      data: users,
+      message: "Admin Fetched Successfully",
     });
   } catch (error) {
     console.log(error);
@@ -954,6 +1110,92 @@ const getEmployee = async (req, res) => {
     });
   }
 };
+const getUserPendingForPsa = async (req, res) => {
+  try {
+    const user = await newUserModel
+      .find({ psaSet: false, role: "Retailer" })
+      .select("-_id name uniqueId mobileNumber panCard state city psaSet");
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (user.length === 0) {
+      return res.status(200).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "User fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+const addPSA = async (req, res) => {
+  try {
+    const { uniqueId, psaID, psaPassword, registerCode } = req.body;
+
+    // Check if a PSA with the same psaID already exists
+    const existingPSA = await PSA.findOne({ psaID });
+
+    if (existingPSA) {
+      return res.status(400).send({
+        message: "PSA with the same psaID already exists",
+        success: false,
+      });
+    }
+
+    const user = await newUserModel.findOne({ uniqueId });
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const data = {
+      uniqueId,
+      psaId: psaID,
+      psaPassword,
+      registerCode,
+    };
+
+    const newPsaId = await PSA.create(data);
+
+    if (!newPsaId) {
+      return res.status(400).send({
+        message: "Cannot Add New PSA",
+        success: false,
+      });
+    }
+
+    user.psaSet = true;
+    await newPsaId.save();
+    await user.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "PSA Added Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
 module.exports = {
   approveUser,
   rejectUser,
@@ -984,4 +1226,6 @@ module.exports = {
   getAlert,
   createEmployee,
   getEmployee,
+  getUserPendingForPsa,
+  addPSA,
 };

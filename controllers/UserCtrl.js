@@ -8,6 +8,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const complaintModel = require("../models/ComplaintModel");
 const EmployeeModel = require("../models/EmployeeModel");
+const PSAModelRetailer = require("../models/PSAmodelRetailer");
 
 const login = async (req, res) => {
   try {
@@ -75,6 +76,8 @@ const createUser = async (req, res) => {
       role,
       uniqueId,
       pan,
+      dob,
+      aadharCard,
       createdBy,
       mobileNumber,
       state,
@@ -94,6 +97,7 @@ const createUser = async (req, res) => {
         email,
         password: hashedPassword,
         role,
+        dob,
         mobileNumber,
         uniqueId,
         state,
@@ -126,12 +130,15 @@ const createUser = async (req, res) => {
       password: hashedPassword,
       mobileNumber,
       role,
+      dob,
       uniqueId,
+      aadharCard,
       createdBy: couponPriceOfCreater.uniqueId,
       state,
       panCard: pan,
       city,
       pinCode,
+      isPaidJoiningFee: true,
       couponPrice,
       actualPriceOfCoupon: couponPrice,
       commissionOfCreatedByUser,
@@ -189,6 +196,80 @@ const createUser = async (req, res) => {
     });
   }
 };
+
+const registerUserViaSite = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      role,
+      uniqueId,
+      pan,
+      aadharCard,
+      mobileNumber,
+      state,
+      city,
+      pinCode,
+    } = req.body;
+    const data = {
+      name,
+      email,
+      role,
+      mobileNumber,
+      uniqueId,
+      aadharCard,
+      state,
+      panCard: pan,
+      city,
+      status: "registeredViaSite",
+      pinCode,
+      createdBy: "6524543d6499044021e90373",
+    };
+    const duplicateMobileNumber = await newUserModel.findOne({
+      mobileNumber: mobileNumber,
+    });
+    if (duplicateMobileNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Mobile Number already exists",
+      });
+    }
+    const duplicateUniqueId = await newUserModel.findOne({
+      uniqueId: uniqueId,
+    });
+    if (duplicateUniqueId) {
+      return res.status(400).json({
+        success: false,
+        message: "Unique Id already exists",
+      });
+    }
+    const duplicatePanCard = await newUserModel.findOne({
+      panCard: pan,
+    });
+    if (duplicatePanCard) {
+      return res.status(400).json({
+        success: false,
+        message: "Pan Card already exists",
+      });
+    }
+    const newUser = await newUserModel.create(data);
+    newUser;
+    await newUser.save();
+    res.status(201).json({
+      success: true,
+      data: newUser,
+      message: "User created successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      error: "Internal Server Error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const fetchUserRolePrice = async (req, res) => {
   try {
     const price = await RolePriceModel.findOne(); // Assuming you have only one price document
@@ -579,6 +660,7 @@ const initiateAddMoneyToWallet = async (req, res) => {
     });
   }
 };
+// not using this
 const getCreatedPartners = async (req, res) => {
   try {
     const { uniqueId } = req.body;
@@ -628,7 +710,9 @@ const getAllPartnersCreatedByUser = async (req, res) => {
     const { uniqueId } = req.body;
 
     // Find the user who created partners based on uniqueId
-    const user = await newUserModel.findOne({ uniqueId });
+    const user = await newUserModel
+      .findOne({ uniqueId })
+      .select("uniqueId role name panCard aadharCard createdBy mobileNumber)");
 
     if (!user) {
       return res
@@ -636,9 +720,46 @@ const getAllPartnersCreatedByUser = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    const partners = await newUserModel.find({ createdBy: user.uniqueId });
+    const partners = await newUserModel
+      .find({ createdBy: user.uniqueId })
+      .select("-password -v -_id)");
 
-    return res.status(200).json({ success: true, data: partners });
+    if (!partners) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No partners found" });
+    }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = partners.length;
+    results.totalPages = Math.ceil(partners.length / limit);
+    if (endIndex < partners.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = partners.slice(startIndex, endIndex);
+    if (!partners) {
+      return res.status(404).send({
+        success: false,
+        message: "No Master Distributor Found",
+      });
+    }
+    return res.status(200).send({
+      data: results,
+      success: true,
+      message: "Master Distributor Fetched Successfully",
+    });
   } catch (error) {
     console.error("Error in getAllPartnersCreatedByUser:", error);
     return res
@@ -797,6 +918,66 @@ const authController = async (req, res) => {
     });
   }
 };
+const transfertoUser = async (req, res) => {
+  try {
+    const { uniqueId, amount, senderId } = req.body;
+    const user = await newUserModel.findOne({ uniqueId });
+    const sender = await newUserModel.findOne({ uniqueId: senderId });
+    if (!user) {
+      return res.status(404).send({
+        message: "Receiver Id is not valid",
+        success: false,
+      });
+    }
+    if (!sender) {
+      return res.status(404).send({
+        message: "Sender Id is not valid",
+        success: false,
+      });
+    }
+    if (user) {
+      user.walletBalance = user.walletBalance + amount;
+      await user.save();
+      sender.walletBalance = sender.walletBalance - amount;
+      await sender.save();
+      return res.status(200).send({
+        success: true,
+        message: "Amount transfered successfully",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: "auth error",
+      success: false,
+      error,
+    });
+  }
+};
+
+const getPsaDetails = async (req, res) => {
+  try {
+    const { uniqueId } = req.body;
+    const user = await PSAModelRetailer.findOne({ uniqueId });
+    if (!user) {
+      return res.status(404).send({
+        message: "No PSA found",
+        success: false,
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+      error,
+    });
+  }
+};
 
 module.exports = {
   login, // All Users
@@ -819,6 +1000,9 @@ module.exports = {
   getBankName,
   getAddMoneyToWalletHistory,
   getComplaints,
+  getPsaDetails,
+  registerUserViaSite,
+  transfertoUser,
 };
 /* Works Perfectly fine
 

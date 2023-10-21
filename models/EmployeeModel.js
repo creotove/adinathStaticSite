@@ -10,7 +10,12 @@ const employeeSchema = new mongoose.Schema({
   },
   perms: {
     type: String,
-    enum: ["isWalletApprover", "isCouponApprover", "allAccess"],
+    enum: [
+      "isWalletApprover",
+      "isCouponApprover",
+      "isUserApprover",
+      "allAccess",
+    ],
     required: true,
   },
   uniqueId: {
@@ -18,10 +23,10 @@ const employeeSchema = new mongoose.Schema({
     unique: true,
     required: [true, "Unique Id is required"],
   },
-  password:{
+  password: {
     type: String,
-    required : [true, "password is required"]
-  }
+    required: [true, "password is required"],
+  },
 });
 const EmployeeModel = mongoose.model("emplouee", employeeSchema);
 module.exports = EmployeeModel;

@@ -1,3 +1,4 @@
+const PSAmodel = require("../models/PSAmodelRetailer");
 const CouponPurchased = require("../models/couponPurchased");
 const newUserModel = require("../models/newUserModel");
 
@@ -45,10 +46,12 @@ const purchaseCouponNew = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    const couponPurchase = await CouponPurchased.findOne({
-      uniqueId,
+    const couponPurchase = await CouponPurchased.findById({
+      _id: coupon_id,
     });
+
+    couponPurchase.status = "approved";
+    await couponPurchase.save();
 
     if (!couponPurchase) {
       return res
@@ -57,11 +60,6 @@ const purchaseCouponNew = async (req, res) => {
     }
     await calculateCommission(uniqueId, singleCouponPrice, quantity);
 
-    couponPurchase.status = "approved";
-    await couponPurchase.save();
-
-    const coupon = await CouponPurchased.findById(coupon_id);
-    coupon.dateOfApprove = Date.now();
 
     res.status(200).json({
       message: "Coupon purchased successfully",

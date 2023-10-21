@@ -21,12 +21,16 @@ const {
   createComplaint,
   getAddMoneyToWalletHistory,
   getComplaints,
+  getPsaDetails,
+  registerUserViaSite,
+  transfertoUser,
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
 const router = express.Router();
 
 router.post("/login", login);
 router.post("/createUser", createUser); // Every user can create a user except Retailer
+router.post("/registerUserViaSite", registerUserViaSite);
 
 // Change the price of a coupon
 router.post("/changeCouponPrice", changeCouponPrice); // Every user can change coupon price except Retailer
@@ -76,5 +80,9 @@ router.post("/getAllPartnersCreatedByUser", getAllPartnersCreatedByUser);
 
 router.post("/add-complaint", createComplaint);
 router.post("/get-complaints", getComplaints);
+
+router.post("/get-psa-details", getPsaDetails);
+
+router.post("/transfertoUser", transfertoUser);
 
 module.exports = router;
