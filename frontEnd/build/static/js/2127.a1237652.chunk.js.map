@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/2127.a1237652.chunk.js","mappings":"gLAQA,UANc,WACZ,OACEA,EAAAA,EAAAA,KAAA,OAAAC,SAAK,SAET,C","sources":["views/coupon-approve-dashboard/Index.js"],"sourcesContent":["import React from 'react'\r\n\r\nconst Index = () => {\r\n  return (\r\n    <div>Index</div>\r\n  )\r\n}\r\n\r\nexport default Index"],"names":["_jsx","children"],"sourceRoot":""}
