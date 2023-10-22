@@ -9,6 +9,7 @@ const bcrypt = require("bcryptjs");
 const PSA = require("../models/PSAmodelRetailer");
 const RolePriceModel = require("../models/RolePriceModel");
 const complaintModel = require("../models/ComplaintModel");
+const roleChangeModel = require("../models/roleChangeModel");
 
 const getRolePrice = async (req, res) => {
   try {
@@ -164,7 +165,9 @@ const rejectCouponPurchase = async (req, res) => {
 const getUserForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
-    const pendingUsers = await newUserModel.find({ status: "pending" });
+    const pendingUsers = await newUserModel.find({ status: "pending" }).sort({
+      createdAt: -1,
+    });
 
     // Create an array to store the results
     const usersWithTransactionInfo = [];
@@ -204,7 +207,16 @@ const getRetailerForApproval = async (req, res) => {
         role: "Retailer",
         status: "pending",
       })
-      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city")
+      .sort({
+        createdAt: -1,
+      });
+    if (!pendingRetailer) {
+      return res.status(404).send({
+        success: false,
+        message: "No Retailer Found",
+      });
+    }
 
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -226,12 +238,6 @@ const getRetailerForApproval = async (req, res) => {
       };
     }
     results.results = pendingRetailer.slice(startIndex, endIndex);
-    if (!pendingRetailer) {
-      return res.status(404).send({
-        success: false,
-        message: "No Retailer Found",
-      });
-    }
     return res.status(200).send({
       data: results,
       success: true,
@@ -253,7 +259,18 @@ const getMasterDistributorForApproval = async (req, res) => {
         role: "Master Distributor",
         status: "pending",
       })
-      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city")
+      .sort({
+        createdAt: -1,
+      });
+
+    if (!pendingMasterDistributor) {
+      return res.status(404).send({
+        success: false,
+        message: "No Master Distributor Found",
+      });
+    }
+
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
     const startIndex = (page - 1) * limit;
@@ -274,12 +291,7 @@ const getMasterDistributorForApproval = async (req, res) => {
       };
     }
     results.results = pendingMasterDistributor.slice(startIndex, endIndex);
-    if (!pendingMasterDistributor) {
-      return res.status(404).send({
-        success: false,
-        message: "No Master Distributor Found",
-      });
-    }
+
     return res.status(200).send({
       data: results,
       success: true,
@@ -300,7 +312,16 @@ const getDistributorForApproval = async (req, res) => {
         status: "pending",
         role: "Distributor",
       })
-      .select("-_id name uniqueId mobileNumber panCard aadharCard city");
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city")
+      .sort({
+        createdAt: -1,
+      });
+    if (!pendingDistributor) {
+      return res.status(404).send({
+        success: false,
+        message: "Distributor Found",
+      });
+    }
 
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
@@ -322,12 +343,7 @@ const getDistributorForApproval = async (req, res) => {
       };
     }
     results.results = pendingDistributor.slice(startIndex, endIndex);
-    if (!pendingDistributor) {
-      return res.status(404).send({
-        success: false,
-        message: "Distributor Found",
-      });
-    }
+
     return res.status(200).send({
       data: results,
       success: true,
@@ -343,10 +359,15 @@ const getDistributorForApproval = async (req, res) => {
 const getAdminForApproval = async (req, res) => {
   try {
     // Find all users with status 'pending' from the newUserModel
-    const pendingAdmin = await newUserModel.find({
-      role: "Admin",
-      status: "pending",
-    });
+    const pendingAdmin = await newUserModel
+      .find({
+        role: "Admin",
+        status: "pending",
+      })
+      .select("-_id name uniqueId mobileNumber panCard aadharCard city")
+      .sort({
+        createdAt: -1,
+      });
     if (!pendingAdmin) {
       return res.status(404).send({
         success: false,
@@ -390,7 +411,12 @@ const getCouponRequests = async (req, res) => {
     // Find all users with status 'pending' from the newUserModel
     const pendingCouponRequests = await CouponPurchased.find({
       status: "pending",
-    }).populate("retailerId");
+    })
+      .populate("retailerId")
+      .sort({
+        createdAt: -1,
+      });
+
     if (!pendingCouponRequests) {
       return res.status(404).send({
         success: false,
@@ -437,7 +463,11 @@ const getAddMoneyToWalletRequests = async (req, res) => {
       .find({
         status: "pending",
       })
-      .populate("userId");
+      .populate("userId")
+      .sort({
+        createdAt: -1,
+      });
+
     if (!pendingAddMoneyToWalletRequests) {
       return res.status(404).send({
         success: false,
@@ -570,7 +600,11 @@ const getWalletWithdrawalRequest = async (req, res) => {
       .populate({
         path: "userId",
         select: "name uniqueId", // Exclude the password field
+      })
+      .sort({
+        createdAt: -1,
       });
+
     if (!pendingWalletWithdrawalRequest) {
       return res.status(404).send({
         success: false,
@@ -839,7 +873,7 @@ const getAllRetailer = async (req, res) => {
 // Removed this api as it is not required ends here
 
 const getAlLusers = async (req, res) => {
-  const users = await newUserModel.find({});
+  const users = await newUserModel.find({}).sort({ createdAt: -1 });
   if (!users) {
     return res.status(404).send({
       success: false,
@@ -1298,7 +1332,9 @@ const getUsersComplaints = async (req, res) => {
 const searchUser = async (req, res) => {
   try {
     const { search } = req.body;
-    const user = await newUserModel.findOne({ uniqueId:search }).select("-_id -password -__v -isPaidJoiningFee -psaSet -updatedAt ");
+    const user = await newUserModel
+      .findOne({ uniqueId: search })
+      .select("-_id -password -__v -isPaidJoiningFee -psaSet -updatedAt ");
     if (!user) {
       return res.status(404).send({
         success: false,
@@ -1318,6 +1354,146 @@ const searchUser = async (req, res) => {
     });
   }
 };
+
+const getWalletAddReqHistory = async (req, res) => {
+  try {
+    const walletAddReqHistory = await addToWalletHistory
+      .find({})
+      .populate({
+        path: "userId",
+        select: "name uniqueId", // Exclude the password field
+      })
+      .sort({ createdAt: -1 });
+    if (!walletAddReqHistory) {
+      return res.status(404).send({
+        success: false,
+        message: "No Wallet Add Requests Found",
+      });
+    }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = walletAddReqHistory.length;
+    results.totalPages = Math.ceil(walletAddReqHistory.length / limit);
+    if (endIndex < walletAddReqHistory.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = walletAddReqHistory.slice(startIndex, endIndex);
+
+    return res.status(200).send({
+      data: results,
+      success: true,
+      message: "Admin Fetched Successfully",
+    });
+  } catch (error) {
+    // Handle errors here
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+const setComplaintAsResolved = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const complaint = await complaintModel.findById(id);
+    if (!complaint) {
+      return res.status(404).send({
+        success: false,
+        message: "Complaint not found",
+      });
+    }
+    complaint.status = "resolved";
+    await complaint.save();
+    return res.status(200).send({
+      success: true,
+      message: "Complaint Resolved Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+const deleteComplaintImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const complaint = await complaintModel.findById(id);
+    if (!complaint) {
+      return res.status(404).send({
+        success: false,
+        message: "Complaint not found",
+      });
+    }
+    complaint.screenshot = "";
+    await complaint.save();
+    return res.status(200).send({
+      success: true,
+      message: "Complaint Image Deleted Successfully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+const getRoleChangeRequests = async (req, res) => {
+  try {
+    const roleChangeRequests = await roleChangeModel.find({}).sort({
+      createdAt: -1,
+    });
+    if (!roleChangeRequests) {
+      return res.status(404).send({
+        success: false,
+        message: "No Role Change Requests Found",
+      });
+    }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = roleChangeRequests.length;
+    results.totalPages = Math.ceil(roleChangeRequests.length / limit);
+    if (endIndex < roleChangeRequests.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = roleChangeRequests.slice(startIndex, endIndex);
+
+    return res.status(200).send({
+      data: results,
+      success: true,
+      message: "Fetched Successfully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+}
 
 module.exports = {
   approveUser,
@@ -1353,4 +1529,8 @@ module.exports = {
   addPSA,
   getUsersComplaints,
   searchUser,
+  getWalletAddReqHistory,
+  setComplaintAsResolved,
+  deleteComplaintImage,
+  getRoleChangeRequests,
 };

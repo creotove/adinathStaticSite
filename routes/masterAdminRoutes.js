@@ -35,6 +35,10 @@ const {
   addPSA,
   getUsersComplaints,
   searchUser,
+  getWalletAddReqHistory,
+  setComplaintAsResolved,
+  deleteComplaintImage,
+  getRoleChangeRequests,
 } = require("../controllers/MasterAdminCtrl");
 
 // router.get("/masterAdmin", getAllMasterAdmins);
@@ -126,5 +130,17 @@ router.get('/getUserComplaints', getUsersComplaints);
 
 //POST || Get user by search
 router.post("/searchUser",  searchUser);
+
+//GET || Get all users wallet Add History 
+router.get("/getWalletAddReqHistory", getWalletAddReqHistory);
+
+//Patch || Update user complaint status
+router.patch("/setComplaintResolved/:id", setComplaintAsResolved);
+
+//Get || Delete Complaint Image
+router.delete("/deleteComplaintImage/:id", deleteComplaintImage);
+
+//GEt || get all users role changes
+router.get("/getRoleChangeRequests", getRoleChangeRequests);
 
 module.exports = router;

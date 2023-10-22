@@ -91,3 +91,9 @@ module.exports = {
 
 // 1. [ ] Add Employe sectiom in master admin panel [type with diff role : ["all access", "coupon based", "add to wallet", "all user"]]
 // 2. [ ] Access All request for new Users, coupon, add to wallet.
+
+
+//Testing Site Problems 
+// 1. [ ] PSA was not working
+// 2. [ ] create wallet history.
+// 3. [ ] Image Download option in complaint history in MA

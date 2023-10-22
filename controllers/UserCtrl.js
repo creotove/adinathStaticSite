@@ -9,6 +9,7 @@ const jwt = require("jsonwebtoken");
 const complaintModel = require("../models/ComplaintModel");
 const EmployeeModel = require("../models/EmployeeModel");
 const PSAModelRetailer = require("../models/PSAmodelRetailer");
+const roleChangeModel = require("../models/roleChangeModel");
 
 const login = async (req, res) => {
   try {
@@ -1025,19 +1026,44 @@ const createComplaint = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-const getComplaints = async (req, res) => {
+
+
+const getComplaintsPaginated = async (req, res) => {
   try {
     const { userId } = req.body;
-    const complaint = await complaintModel.find({ userId });
-    if (!complaint) {
+    const complaints = await complaintModel
+      .find({ userId })
+      .sort({ date: "desc" });
+    if (!complaints) {
       return res.status(404).send({
         error: "No complaints found",
         success: false,
       });
     }
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const results = {};
+    results.totalCount = complaints.length;
+    results.totalPages = Math.ceil(complaints.length / limit);
+    if (endIndex < complaints.length) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+    results.results = complaints.slice(startIndex, endIndex);
     return res.status(200).send({
-      data: complaint,
+      data: results,
       success: true,
+      message: "Complaints Fetched Successfully",
     });
   } catch (error) {
     console.log(error);
@@ -1196,7 +1222,12 @@ const getRolePrice = async (req, res) => {
     const { role } = req.body;
     let data = {};
     if (role === "Retailer") {
-      const fieldsToSelect = ["admin", "masterDistributor", "distributor","-_id"];
+      const fieldsToSelect = [
+        "admin",
+        "masterDistributor",
+        "distributor",
+        "-_id",
+      ];
       const rolePrice = await RolePriceModel.findOne(
         {},
         fieldsToSelect.join(" ")
@@ -1218,7 +1249,7 @@ const getRolePrice = async (req, res) => {
       });
     }
     if (role === "Distributor") {
-      const fieldsToSelect = ["admin", "masterDistributor","-_id"];
+      const fieldsToSelect = ["admin", "masterDistributor", "-_id"];
       const rolePrice = await RolePriceModel.findOne(
         {},
         fieldsToSelect.join(" ")
@@ -1241,7 +1272,7 @@ const getRolePrice = async (req, res) => {
       });
     }
     if (role === "Master Distributor") {
-      const fieldsToSelect = ["admin","-_id"];
+      const fieldsToSelect = ["admin", "-_id"];
       const data = {};
       const rolePrice = await RolePriceModel.findOne(
         {},
@@ -1279,6 +1310,37 @@ const getRolePrice = async (req, res) => {
   }
 };
 
+const changeRoleReq = async (req, res) => {
+  try {
+    const { userId, modalRole,modalAmount,transactionId } = req.body;
+    const user = await newUserModel.findOne({ uniqueId: userId });
+    if (!user) {
+      return res.status(404).send({
+        message: "User not found",
+        success: false,
+      });
+    }
+    const roleReq = new roleChangeModel({
+      uniqueId:userId,
+      role:modalRole,
+      amount:modalAmount,
+      transactionId,
+    });
+    await roleReq.save();
+    return res.status(200).send({
+      success: true,
+      message: "Role changed successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: "Internal Server Error",
+      success: false,
+      error,
+    });
+  }
+};
+
 module.exports = {
   login, // All Users
   createUser, // Every user can create a user except Retailer
@@ -1299,7 +1361,6 @@ module.exports = {
   fetchTransactionId,
   getBankName,
   getAddMoneyToWalletHistory,
-  getComplaints,
   getPsaDetails,
   registerUserViaSite,
   transfertoUser,
@@ -1308,6 +1369,8 @@ module.exports = {
   createUserByEmp,
   getAllPartnersCreatedByEmp,
   getRolePrice,
+  getComplaintsPaginated,
+  changeRoleReq,
 };
 /* Works Perfectly fine
 

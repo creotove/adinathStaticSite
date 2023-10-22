@@ -20,7 +20,6 @@ const {
   getBankName,
   createComplaint,
   getAddMoneyToWalletHistory,
-  getComplaints,
   getPsaDetails,
   registerUserViaSite,
   transfertoUser,
@@ -28,12 +27,17 @@ const {
   changeCouponPriceofEmp,
   createUserByEmp,
   getAllPartnersCreatedByEmp,
-  getRolePrice
+  getRolePrice,
+  getComplaintsPaginated,
+  changeRoleReq
   
 } = require("../controllers/UserCtrl");
 const userAuthMiddleware = require("../middlewares/userAuthMiddleware");
 const router = express.Router();
 
+// use this after every route to authenticate user
+// router.use(userAuthMiddleware)
+// Login
 router.post("/login", login);
 router.post("/createUser", createUser); // Every user can create a user except Retailer
 router.post("/registerUserViaSite", registerUserViaSite);
@@ -85,7 +89,8 @@ router.post("/getCreatedPartners", getCreatedPartners);
 router.post("/getAllPartnersCreatedByUser", getAllPartnersCreatedByUser);
 
 router.post("/add-complaint", createComplaint);
-router.post("/get-complaints", getComplaints);
+router.post("/get-complaints-paginated", getComplaintsPaginated);
+
 
 router.post("/get-psa-details", getPsaDetails);
 
@@ -96,6 +101,6 @@ router.post("/changeCouponPriceofEmp", changeCouponPriceofEmp);
 router.post("/createUserByEmp", createUserByEmp);
 router.post("/getAllPartnersCreatedByEmp", getAllPartnersCreatedByEmp);
 router.post("/getRolePrice",  getRolePrice);
-
+router.post('/changeRoleReq',changeRoleReq)
 
 module.exports = router;

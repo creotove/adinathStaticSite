@@ -8,9 +8,9 @@ module.exports = async (req, res, next) => {
         return res.status(401).send({
           message: "Auth Failed",
           success: false,
-          error: `${err} + userAuthMiddleware if section`,
         });
       } else {
+        console.log(decode);
         req.body._id = decode.id;
         next();
       }
